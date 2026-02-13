@@ -1,0 +1,11 @@
+Janela 1:
+	ngrok start --all --config=ngrok.yml
+	
+Janela 2:
+	C:\Users\lucrivel\corretor-saude-saas\frontend>npm run dev
+	
+Janela 3:
+	C:\Users\lucrivel\corretor-saude-saas\backend>npm run dev
+
+-- Se precisar limpar o cache e reiniciar a conexão com o WhatsApp
+	C:\Users\lucrivel\corretor-saude-saas\backend>rmdir /s /q auth_info

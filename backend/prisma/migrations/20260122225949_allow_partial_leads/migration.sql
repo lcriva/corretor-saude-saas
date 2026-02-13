@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "leads" ADD COLUMN     "percentualConclusao" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "nome" DROP NOT NULL,
+ALTER COLUMN "idade" DROP NOT NULL,
+ALTER COLUMN "cidade" DROP NOT NULL;

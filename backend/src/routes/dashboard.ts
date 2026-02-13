@@ -1,0 +1,194 @@
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authMiddleware } from '../middleware/auth';
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+router.use(authMiddleware);
+
+// Estatísticas gerais do dashboard
+router.get('/stats', async (req, res) => {
+    try {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+        // Leads criados hoje
+        const leadsHoje = await prisma.lead.count({
+            where: {
+                userId: req.userId,
+                criadoEm: { gte: hoje }
+            }
+        });
+
+        // Total de leads
+        const totalLeads = await prisma.lead.count({
+            where: { userId: req.userId }
+        });
+
+        // Propostas enviadas no mês (Leads com status de proposta, negociação ou fechado)
+        const propostasEnviadas = await prisma.lead.count({
+            where: {
+                userId: req.userId,
+                status: {
+                    in: ['proposta', 'negociacao', 'fechado']
+                },
+                atualizadoEm: { gte: inicioMes }
+            }
+        });
+
+        // Vendas fechadas no mês
+        const vendasFechadas = await prisma.lead.count({
+            where: {
+                userId: req.userId,
+                status: 'fechado',
+                atualizadoEm: { gte: inicioMes }
+            }
+        });
+
+        // Taxa de conversão
+        const taxaConversao = propostasEnviadas > 0
+            ? parseFloat(((vendasFechadas / propostasEnviadas) * 100).toFixed(1))
+            : 0;
+
+        // Receita estimada (comissão de 10% sobre vendas fechadas)
+        // Prioriza valorPlano, se não tiver usa valorEstimado
+        const vendasComValor = await prisma.lead.findMany({
+            where: {
+                userId: req.userId,
+                status: 'fechado',
+                atualizadoEm: { gte: inicioMes },
+                OR: [
+                    { valorPlano: { not: null } },
+                    { valorEstimado: { not: null } }
+                ]
+            },
+            select: { valorPlano: true, valorEstimado: true }
+        });
+
+        const receitaMes = vendasComValor.reduce((acc, lead) => {
+            const valor = lead.valorPlano || lead.valorEstimado || 0;
+            return acc + valor; // Comissão de 100% (valor total da primeira mensalidade)
+        }, 0);
+
+        // Pipeline
+        const pipeline = {
+            novo: await prisma.lead.count({ where: { userId: req.userId, status: 'novo' } }),
+            proposta: await prisma.lead.count({ where: { userId: req.userId, status: 'proposta' } }),
+            negociacao: await prisma.lead.count({ where: { userId: req.userId, status: 'negociacao' } }),
+            fechado: await prisma.lead.count({ where: { userId: req.userId, status: 'fechado' } }),
+            perdido: await prisma.lead.count({ where: { userId: req.userId, status: 'perdido' } })
+        };
+
+        res.json({
+            leadsHoje,
+            totalLeads,
+            propostasEnviadas,
+            vendasFechadas,
+            taxaConversao,
+            receitaMes: Math.round(receitaMes),
+            pipeline
+        });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+    }
+});
+
+// Atividades recentes
+router.get('/atividades', async (req, res) => {
+    try {
+        const interacoes = await prisma.interacao.findMany({
+            where: {
+                lead: {
+                    userId: req.userId
+                }
+            },
+            include: {
+                lead: {
+                    select: {
+                        id: true,
+                        nome: true,
+                        status: true
+                    }
+                }
+            },
+            orderBy: { criadoEm: 'desc' },
+            take: 10
+        });
+
+        res.json(interacoes);
+    } catch (error) {
+        console.error('Erro ao buscar atividades:', error);
+        res.status(500).json({ error: 'Erro ao buscar atividades' });
+    }
+});
+
+// Leads que precisam de atenção (IA suggestions)
+router.get('/alertas', async (req, res) => {
+    try {
+        const hoje = new Date();
+        const tresDiasAtras = new Date(hoje.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+        // Leads novos sem interação há 3 dias
+        const leadsSemInteracao = await prisma.lead.findMany({
+            where: {
+                userId: req.userId,
+                status: 'novo',
+                criadoEm: { lte: tresDiasAtras }
+            },
+            take: 5
+        });
+
+        // Propostas enviadas sem resposta há mais de 2 dias
+        const doisDiasAtras = new Date(hoje.getTime() - 2 * 24 * 60 * 60 * 1000);
+        const propostasSemResposta = await prisma.proposta.findMany({
+            where: {
+                userId: req.userId,
+                enviada: true,
+                aceita: false,
+                criadoEm: { lte: doisDiasAtras }
+            },
+            include: {
+                lead: true
+            },
+            take: 5
+        });
+
+        // Leads em negociação há mais de 5 dias
+        const cincoDiasAtras = new Date(hoje.getTime() - 5 * 24 * 60 * 60 * 1000);
+        const negociacoesParadas = await prisma.lead.findMany({
+            where: {
+                userId: req.userId,
+                status: 'negociacao',
+                atualizadoEm: { lte: cincoDiasAtras }
+            },
+            take: 5
+        });
+
+        // Leads em preenchimento (IA em andamento)
+        const leadsEmPreenchimento = await prisma.lead.findMany({
+            where: {
+                userId: req.userId,
+                status: 'novo',
+                percentualConclusao: { lt: 100, gt: 0 }
+            },
+            take: 5,
+            orderBy: { atualizadoEm: 'desc' }
+        });
+
+        res.json({
+            leadsSemInteracao,
+            propostasSemResposta,
+            negociacoesParadas,
+            leadsEmPreenchimento
+        });
+    } catch (error) {
+        console.error('Erro ao buscar alertas:', error);
+        res.status(500).json({ error: 'Erro ao buscar alertas' });
+    }
+});
+
+export default router;

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/corretorsaude?schema=public
+      - JWT_SECRET=sua_chave_secreta_aqui
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WHATSAPP_AUTH_DIR=/app/auth_info_data
+      - PORT=3001
+    volumes:
+      - ./auth_info_data:/app/auth_info_data
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=corretorsaude
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:
