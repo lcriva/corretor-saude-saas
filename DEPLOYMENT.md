@@ -49,7 +49,7 @@ sudo -u postgres psql
 CREATE DATABASE corretorsaude;
 
 -- 2. Alterar senha do usuário 'postgres' (IMPORTANTE: Mude 'sua_senha_segura'!)
-ALTER USER postgres WITH PASSWORD 'sua_senha_segura';
+ALTER USER postgres WITH PASSWORD 'L';
 
 -- 3. Sair
 \q
@@ -61,8 +61,7 @@ ALTER USER postgres WITH PASSWORD 'sua_senha_segura';
 # Ir para pasta de sites
 cd /var/www
 
-# Clonar repositório (Substitua pela URL do seu GitHub)
-git clone https://github.com/SEU_USUARIO/corretor-saude-saas.git app
+git clone https://github.com/lcriva/corretor-saude-saas.git app
 
 # Entrar na pasta
 cd app
@@ -75,9 +74,9 @@ cd backend
 # Criar arquivo .env
 nano .env
 # --- COLE O CONTEÚDO ---
-DATABASE_URL="postgresql://postgres:sua_senha_segura@localhost:5432/corretorsaude?schema=public"
-JWT_SECRET="crie_uma_chave_secreta_bem_longa"
-OPENAI_API_KEY="sua-chave-openai-aqui"
+DATABASE_URL="postgresql://postgres:Lueta@28092018@localhost:5432/corretorsaude?schema=public"
+JWT_SECRET="a9b8c7d6e5f4g3h2i1j0k9l8m7n6o5p4"
+OPENAI_API_KEY="sk-..."
 PORT=3001
 # -----------------------
 # Salve (Ctrl+O, Enter) e Saia (Ctrl+X)
