@@ -95,7 +95,7 @@ cd ../frontend
 # Criar arquivo .env.local
 nano .env.local
 # --- COLE O CONTEÚDO ---
-NEXT_PUBLIC_API_URL=https://api.preventseniorvendas.com.br
+NEXT_PUBLIC_API_URL=https://api.preventseniormelhoridade.com.br
 # -----------------------
 # Salve e Saia
 
@@ -124,9 +124,9 @@ sudo nano /etc/nginx/sites-available/corretorsaude
 
 **Conteúdo do arquivo (Copie e ajuste o domínio):**
 ```nginx
-# 1. API Backend (api.preventseniorvendas.com.br)
+# 1. API Backend (api.preventseniormelhoridade.com.br)
 server {
-    server_name api.preventseniorvendas.com.br;
+    server_name api.preventseniormelhoridade.com.br;
 
     location / {
         proxy_pass http://localhost:3001;
@@ -138,9 +138,9 @@ server {
     }
 }
 
-# 2. Frontend (preventseniorvendas.com.br)
+# 2. Frontend (preventseniormelhoridade.com.br)
 server {
-    server_name preventseniorvendas.com.br www.preventseniorvendas.com.br;
+    server_name preventseniormelhoridade.com.br www.preventseniormelhoridade.com.br;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -164,8 +164,8 @@ sudo systemctl restart nginx
 ## 7. Configurar HTTPS (Cadeado de Segurança)
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d preventseniorvendas.com.br -d www.preventseniorvendas.com.br -d api.preventseniorvendas.com.br
+sudo certbot --nginx -d preventseniormelhoridade.com.br -d www.preventseniormelhoridade.com.br -d api.preventseniormelhoridade.com.br
 ```
 
 ---
-**Pronto!** Seu sistema deve estar acessível em `https://preventseniorvendas.com.br`.
+**Pronto!** Seu sistema deve estar acessível em `https://preventseniormelhoridade.com.br`.
