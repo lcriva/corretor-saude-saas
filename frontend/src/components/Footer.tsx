@@ -22,8 +22,6 @@ export function Footer() {
                     <ul className="space-y-3 text-gray-400 text-sm">
                         <li><a href="#prevent" className="hover:text-[#007aff] transition-colors">Quem Somos</a></li>
                         <li><a href="#rede" className="hover:text-[#007aff] transition-colors">Rede de Atendimento</a></li>
-                        <li><a href="#diferenciais" className="hover:text-[#007aff] transition-colors">Dúvidas Frequentes</a></li>
-                        <li><a href="#" className="hover:text-[#007aff] transition-colors">Portal do Beneficiário</a></li>
                     </ul>
                 </div>
             </div>
