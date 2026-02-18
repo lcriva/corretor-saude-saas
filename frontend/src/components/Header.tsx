@@ -1,0 +1,73 @@
+
+'use client';
+
+import { Phone, Menu } from 'lucide-react';
+import { useState } from 'react';
+
+export function Header() {
+    const phoneNumber = "(11) 96760-9811";
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const sendMessage = () => {
+        const msg = "Olá! Gostaria de uma cotação do Prevent Senior.";
+        window.open(`https://wa.me/5511967609811?text=${encodeURIComponent(msg)}`, '_blank');
+    };
+
+    return (
+        <header className="bg-white py-4 fixed w-full top-0 z-50 shadow-sm border-b border-gray-100">
+            <div className="container mx-auto px-4 md:px-8 flex justify-between items-center h-20">
+                {/* Brand / Logo */}
+                <div className="flex items-center">
+                    <a href="/">
+                        <img
+                            src="https://prevent.tradecorretora.com.br/wp-content/smush-avif/Logo-Corretora-autorizada-Prevent-Senior-logo-prevent-768x146.png.avif"
+                            alt="Prevent Senior"
+                            className="h-10 md:h-12 w-auto object-contain"
+                        />
+                    </a>
+                </div>
+
+                {/* Nav Desktop */}
+                <nav className="hidden md:flex items-center gap-8 font-semibold text-sm text-[#4a4a4a] uppercase tracking-wide">
+                    <a href="/quem-somos" className="hover:text-[#007aff] transition-colors duration-300">Quem Somos</a>
+                    <a href="/#diferenciais" className="hover:text-[#007aff] transition-colors duration-300">Diferenciais</a>
+                    <a href="/#rede" className="hover:text-[#007aff] transition-colors duration-300">Rede Própria</a>
+                    <a href="/#planos" className="hover:text-[#007aff] transition-colors duration-300">Tabela de Preços</a>
+
+                    <button
+                        onClick={sendMessage}
+                        className="bg-[#007aff] hover:bg-[#0062cc] text-white px-7 py-3 rounded-full font-bold transition-all shadow-[0_4px_14px_rgba(0,122,255,0.3)] hover:shadow-[0_6px_20px_rgba(0,122,255,0.4)] flex items-center gap-2"
+                    >
+                        <Phone className="w-4 h-4" />
+                        {phoneNumber}
+                    </button>
+                </nav>
+
+                {/* Mobile Toggle */}
+                <button
+                    className="md:hidden text-gray-700"
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                >
+                    <Menu className="w-8 h-8" />
+                </button>
+            </div>
+
+            {/* Mobile Menu */}
+            {isMenuOpen && (
+                <div className="md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg p-4 flex flex-col gap-4">
+                    <a href="/quem-somos" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Quem Somos</a>
+                    <a href="/#diferenciais" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Diferenciais</a>
+                    <a href="/#rede" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Rede Própria</a>
+                    <a href="/#planos" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Tabela de Preços</a>
+                    <button
+                        onClick={sendMessage}
+                        className="w-full bg-[#007aff] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"
+                    >
+                        <Phone className="w-4 h-4" />
+                        {phoneNumber}
+                    </button>
+                </div>
+            )}
+        </header>
+    );
+}
