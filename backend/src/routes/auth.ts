@@ -59,9 +59,11 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     try {
+        console.log('🔑 Login attempt:', req.body.email);
         const { email, senha } = req.body;
 
         if (!email || !senha) {
+            console.log('❌ Missing email or password');
             return res.status(400).json({ error: 'Email e senha são obrigatórios' });
         }
 
@@ -70,14 +72,18 @@ router.post('/login', async (req, res) => {
         });
 
         if (!user) {
+            console.log('❌ User not found:', email);
             return res.status(401).json({ error: 'Credenciais inválidas' });
         }
 
+        console.log('✅ User found, checking password...');
         const senhaValida = await bcrypt.compare(senha, user.senha);
 
         if (!senhaValida) {
+            console.log('❌ Invalid password for:', email);
             return res.status(401).json({ error: 'Credenciais inválidas' });
         }
+        console.log('✅ Password valid, generating token...');
 
         const token = jwt.sign(
             { userId: user.id, email: user.email },

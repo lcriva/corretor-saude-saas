@@ -86,6 +86,7 @@ npm install
 npx prisma generate
 npx prisma migrate deploy  # Cria as tabelas no banco
 npm run build
+npx prisma db seed # Criar usuário admin inicial (demo@corretor.com)
 ```
 
 ### 4.2. Configurar Frontend

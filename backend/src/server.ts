@@ -31,8 +31,9 @@ app.use('/api/chat', chatRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('❌ Global Error Handler:', err);
     console.error(err.stack);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ error: 'Erro interno do servidor', details: err.message });
 });
 
 // Iniciar servidor

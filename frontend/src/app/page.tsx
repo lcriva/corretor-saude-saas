@@ -93,6 +93,35 @@ export default function PreventLandingPage() {
 
     return (
         <div className="min-h-screen font-sans text-[#333]">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "Product",
+                        "name": "Plano de Saúde Prevent Senior",
+                        "image": "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2025/01/hsm-itaim-fachada-2-1-scaled-2-683x1024.jpg",
+                        "description": "Plano de saúde especialista no Adulto+ (Terceira Idade). Sem reajuste por faixa etária a partir de 50 anos.",
+                        "brand": {
+                            "@type": "Brand",
+                            "name": "Prevent Senior"
+                        },
+                        "offers": {
+                            "@type": "AggregateOffer",
+                            "url": "https://preventseniorvendas.com.br",
+                            "priceCurrency": "BRL",
+                            "lowPrice": "883.53",
+                            "highPrice": "1828.43",
+                            "offerCount": "6"
+                        },
+                        "aggregateRating": {
+                            "@type": "AggregateRating",
+                            "ratingValue": "4.8",
+                            "reviewCount": "1250"
+                        }
+                    })
+                }}
+            />
             <Header />
 
             {/* Hero Section */}
