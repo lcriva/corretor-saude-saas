@@ -178,16 +178,7 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {isLogin && (
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600">
-                            Conta demo para teste:
-                            <br />
-                            <span className="font-mono text-blue-600">demo@corretor.com</span> /
-                            <span className="font-mono text-blue-600"> 123456</span>
-                        </p>
-                    </div>
-                )}
+
             </div>
         </div>
     );
