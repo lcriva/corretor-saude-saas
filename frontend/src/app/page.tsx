@@ -260,6 +260,24 @@ export default function PreventLandingPage() {
                                         </li>
                                     ))}
                                 </ul>
+                                <ul className="mt-8 space-y-3 mb-8">
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Carências Reduzidas</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Rede Hospitalar Exclusiva</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Clube de benefícios Exclusivo</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Rede Própria + de 45 unidades</span>
+                                    </li>
+                                </ul>
                                 <button
                                     onClick={sendMessage}
                                     className="w-full mt-8 bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-bold transition-all transform active:scale-95"
@@ -289,6 +307,24 @@ export default function PreventLandingPage() {
                                             <span className="text-xl font-bold text-[#007aff]">{item.valor}</span>
                                         </li>
                                     ))}
+                                </ul>
+                                <ul className="mt-8 space-y-3 mb-8">
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Carências Reduzidas</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Rede Hospitalar Exclusiva</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Clube de benefícios Exclusivo</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
+                                        <span>Rede Própria + de 45 unidades</span>
+                                    </li>
                                 </ul>
                                 <button
                                     onClick={sendMessage}
