@@ -39,6 +39,16 @@ export default function PreventLandingPage() {
             nome: "Hospital Sancta Maggiore Roma",
             img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2024/11/hsm-mooca-fachada-1-1-1-1-1024x683.jpg",
             local: "Mooca"
+        },
+        {
+            nome: "Hospital Sancta Maggiore Sidney",
+            img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2025/01/hsm-paraiso-fachada-1-1-1-1024x683.jpg",
+            local: "Paraíso"
+        },
+        {
+            nome: "Hospital Sancta Maggiore Vergueiro",
+            img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2025/01/HAOC.webp",
+            local: "Vergueiro"
         }
     ];
 
@@ -47,6 +57,29 @@ export default function PreventLandingPage() {
         { label: "Colaboradores", value: "+ 14 mil", icon: Building },
         { label: "Unidades Próprias", value: "+ 45", icon: MapPin },
         { label: "Experiência", value: "+ 25 anos", icon: Clock },
+    ];
+
+    const diferenciais = [
+        {
+            title: "Rede Própria",
+            desc: "Consultórios, clínicas, laboratórios e hospitais disponíveis em toda região. Cobertura completa para você.",
+            icon: Building
+        },
+        {
+            title: "App Prevent Senior",
+            desc: "Acesso à carteirinha digital, resultados de exames, rede de atendimento e 2ª via de boleto na palma da mão.",
+            icon: Smartphone
+        },
+        {
+            title: "Teleatendimento",
+            desc: "Converse com seu médico por chamada de vídeo, com toda a comodidade e sem sair de casa.",
+            icon: Video
+        },
+        {
+            title: "Carências Reduzidas",
+            desc: "Entre em contato e verifique a redução de carência promocional por liberalidade da Operadora.",
+            icon: Clock
+        }
     ];
 
     const sendMessage = () => {
@@ -182,38 +215,22 @@ export default function PreventLandingPage() {
                 <div className="container mx-auto px-4">
                     <div className="text-center max-w-3xl mx-auto mb-16">
                         <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Vantagens</span>
-                        <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-4 text-[#0f192b]">Diferenciais Prevent Senior</h2>
+                        <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-4 text-[#0f192b]">Benefícios Prevent Senior</h2>
                         <div className="w-20 h-1 bg-[#007aff] mx-auto rounded-full"></div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="p-8 rounded-3xl bg-gray-50 border border-gray-100 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1">
-                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
-                                <ShieldCheck className="w-7 h-7 text-[#007aff]" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {diferenciais.map((item, i) => (
+                            <div key={i} className="p-8 rounded-3xl bg-gray-50 border border-gray-100 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1">
+                                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                                    <item.icon className="w-7 h-7 text-[#007aff]" />
+                                </div>
+                                <h3 className="text-xl font-bold mb-3 text-[#0f192b]">{item.title}</h3>
+                                <p className="text-gray-600 leading-relaxed text-sm">
+                                    {item.desc}
+                                </p>
                             </div>
-                            <h3 className="text-xl font-bold mb-3 text-[#0f192b]">Sem Reajuste por Idade</h3>
-                            <p className="text-gray-600 leading-relaxed">
-                                A partir de 50 anos, você não sofre com reajustes abusivos por mudança de faixa etária. Previsibilidade e respeito.
-                            </p>
-                        </div>
-                        <div className="p-8 rounded-3xl bg-gray-50 border border-gray-100 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1">
-                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
-                                <Building className="w-7 h-7 text-[#007aff]" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3 text-[#0f192b]">Isento de Taxa de Adesão</h3>
-                            <p className="text-gray-600 leading-relaxed">
-                                Ao realizar a contratação, você paga apenas a primeira parcela, sem taxas extras.
-                            </p>
-                        </div>
-                        <div className="p-8 rounded-3xl bg-gray-50 border border-gray-100 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1">
-                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
-                                <CheckCircle className="w-7 h-7 text-[#007aff]" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3 text-[#0f192b]">Medicina Preventiva</h3>
-                            <p className="text-gray-600 leading-relaxed">
-                                Foco total em prevenção e diagnósticos precisos para garantir longevidade com qualidade de vida.
-                            </p>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
