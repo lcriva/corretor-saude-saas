@@ -1,6 +1,6 @@
 'use client';
 
-import { Phone, CheckCircle, MapPin, Building, ShieldCheck, Mail, Menu, MessageCircle } from 'lucide-react';
+import { Phone, CheckCircle, MapPin, Building, ShieldCheck, Mail, Menu, MessageCircle, Users, HeartPulse, Clock } from 'lucide-react';
 import { ChatWidget } from '@/components/ChatWidget';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -17,6 +17,36 @@ export default function PreventLandingPage() {
         { faixa: "Até 43 anos", valor: "R$ 1.055,50" },
         { faixa: "44 a 58 anos", valor: "R$ 1.389,60" },
         { faixa: "59 anos em diante", valor: "R$ 1.828,43" }
+    ];
+
+    const hospitais = [
+        {
+            nome: "Hospital Sancta Maggiore Itaim",
+            img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2025/01/hsm-itaim-fachada-2-1-scaled-2-683x1024.jpg",
+            local: "Itaim Bibi"
+        },
+        {
+            nome: "Hospital Sancta Maggiore Napole",
+            img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2025/01/hsm-altodamooca-fachada-2-1-1-682x1024.jpg",
+            local: "Alto da Mooca"
+        },
+        {
+            nome: "Hospital Sancta Maggiore Dubai",
+            img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2025/01/hsm-dubai-imagem-2-1-1-1024x683.jpg",
+            local: "Morumbi"
+        },
+        {
+            nome: "Hospital Sancta Maggiore Roma",
+            img: "https://www.planospreventsaude.com.br/senior/wp-content/uploads/2024/11/hsm-mooca-fachada-1-1-1-1-1024x683.jpg",
+            local: "Mooca"
+        }
+    ];
+
+    const stats = [
+        { label: "Beneficiários", value: "+ 550 mil", icon: Users },
+        { label: "Colaboradores", value: "+ 14 mil", icon: Building },
+        { label: "Unidades Próprias", value: "+ 45", icon: MapPin },
+        { label: "Experiência", value: "+ 25 anos", icon: Clock },
     ];
 
     const sendMessage = () => {
@@ -83,11 +113,75 @@ export default function PreventLandingPage() {
                 </div>
             </section>
 
+            {/* Quem Somos / Stats Section */}
+            <section id="prevent" className="py-24 bg-white relative overflow-hidden">
+                <div className="container mx-auto px-4">
+                    <div className="text-center max-w-3xl mx-auto mb-16">
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Quem Somos</span>
+                        <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-4 text-[#0f192b]">MAIS SOBRE A PREVENT</h2>
+                        <h3 className="text-xl text-gray-500 font-light">Primeiro e único plano de saúde pensado para o Adulto+.</h3>
+                        <div className="w-20 h-1 bg-[#007aff] mx-auto rounded-full mt-6"></div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        {stats.map((stat, i) => (
+                            <div key={i} className="text-center p-6 rounded-2xl bg-gray-50 border border-gray-100 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 mx-auto bg-[#007aff]/10 rounded-full flex items-center justify-center mb-4 text-[#007aff]">
+                                    <stat.icon className="w-6 h-6" />
+                                </div>
+                                <div className="text-3xl md:text-4xl font-black text-[#0f192b] mb-2">{stat.value}</div>
+                                <div className="text-gray-500 font-medium uppercase text-xs tracking-wider">{stat.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Rede Section */}
+            <section id="rede" className="py-24 bg-[#0f192b] text-white relative">
+                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#007aff]/10 skew-x-12 transform translate-x-20"></div>
+                <div className="container mx-auto px-4 relative z-10">
+                    <div className="text-center max-w-3xl mx-auto mb-16">
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Estrutura Completa</span>
+                        <h2 className="text-3xl md:text-5xl font-bold mt-2 mb-6 leading-tight">Rede Própria</h2>
+                        <p className="text-gray-400 text-lg leading-relaxed">
+                            Apenas algumas das unidades da rede Sancta Maggiore, referência em hotelaria e tecnologia hospitalar.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {hospitais.map((hospital, i) => (
+                            <div key={i} className="group relative rounded-2xl overflow-hidden aspect-[3/4] cursor-pointer shadow-xl">
+                                <img
+                                    src={hospital.img}
+                                    alt={hospital.nome}
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
+                                <div className="absolute bottom-0 left-0 p-6 w-full">
+                                    <span className="text-[#007aff] text-xs font-bold uppercase tracking-wider mb-2 block">{hospital.local}</span>
+                                    <h3 className="text-white font-bold text-lg leading-tight">{hospital.nome}</h3>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="text-center mt-12">
+                        <button
+                            onClick={sendMessage}
+                            className="border border-white/20 hover:bg-white hover:text-[#0f192b] text-white px-8 py-3 rounded-full font-bold transition-all"
+                        >
+                            Consultar Rede Completa
+                        </button>
+                    </div>
+                </div>
+            </section>
+
             {/* Diferenciais */}
             <section id="diferenciais" className="py-24 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Por que escolher?</span>
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Vantagens</span>
                         <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-4 text-[#0f192b]">Diferenciais Prevent Senior</h2>
                         <div className="w-20 h-1 bg-[#007aff] mx-auto rounded-full"></div>
                     </div>
@@ -106,9 +200,9 @@ export default function PreventLandingPage() {
                             <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
                                 <Building className="w-7 h-7 text-[#007aff]" />
                             </div>
-                            <h3 className="text-xl font-bold mb-3 text-[#0f192b]">Rede Própria Exclusiva</h3>
+                            <h3 className="text-xl font-bold mb-3 text-[#0f192b]">Isento de Taxa de Adesão</h3>
                             <p className="text-gray-600 leading-relaxed">
-                                Hospitais Sancta Maggiore e Núcleos de Medicina Avançada desenhados para o cuidado integrado e especializado.
+                                Ao realizar a contratação, você paga apenas a primeira parcela, sem taxas extras.
                             </p>
                         </div>
                         <div className="p-8 rounded-3xl bg-gray-50 border border-gray-100 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1">
@@ -119,58 +213,6 @@ export default function PreventLandingPage() {
                             <p className="text-gray-600 leading-relaxed">
                                 Foco total em prevenção e diagnósticos precisos para garantir longevidade com qualidade de vida.
                             </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Rede Section */}
-            <section id="rede" className="py-24 bg-[#0f192b] text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#007aff]/10 skew-x-12 transform translate-x-20"></div>
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="flex flex-col md:flex-row items-center gap-16">
-                        <div className="w-full md:w-1/2">
-                            <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Estrutura Completa</span>
-                            <h2 className="text-3xl md:text-5xl font-bold mt-2 mb-6 leading-tight">Rede Sancta Maggiore</h2>
-                            <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                                A rede própria da Prevent Senior é referência em hotelaria e tecnologia hospitalar.
-                                Projetada para acolher com humanidade e eficiência.
-                            </p>
-                            <ul className="space-y-4">
-                                <li className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-[#007aff]/20 flex items-center justify-center text-[#007aff]">
-                                        <Building className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <strong className="block text-white text-lg">Hospitais Especializados</strong>
-                                        <span className="text-gray-500 text-sm">Infraestrutura de ponta em SP</span>
-                                    </div>
-                                </li>
-                                <li className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-[#007aff]/20 flex items-center justify-center text-[#007aff]">
-                                        <MapPin className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <strong className="block text-white text-lg">Núcleos de Medicina Avançada</strong>
-                                        <span className="text-gray-500 text-sm">Diagnósticos e terapias em um só lugar</span>
-                                    </div>
-                                </li>
-                            </ul>
-                            <button
-                                onClick={sendMessage}
-                                className="mt-10 border border-white/20 hover:bg-white hover:text-[#0f192b] text-white px-8 py-3 rounded-full font-bold transition-all"
-                            >
-                                Consultar Rede Completa
-                            </button>
-                        </div>
-                        <div className="w-full md:w-1/2">
-                            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-700">
-                                <img
-                                    src="https://www.preventsenior.com.br/images/share-ps.jpg"
-                                    alt="Hospital Sancta Maggiore"
-                                    className="w-full h-auto transform hover:scale-105 transition-transform duration-700"
-                                />
-                            </div>
                         </div>
                     </div>
                 </div>

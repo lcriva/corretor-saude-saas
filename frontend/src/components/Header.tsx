@@ -29,10 +29,10 @@ export function Header() {
 
                 {/* Nav Desktop */}
                 <nav className="hidden md:flex items-center gap-8 font-semibold text-sm text-[#4a4a4a] uppercase tracking-wide">
-                    <a href="/quem-somos" className="hover:text-[#007aff] transition-colors duration-300">Quem Somos</a>
-                    <a href="/#diferenciais" className="hover:text-[#007aff] transition-colors duration-300">Diferenciais</a>
-                    <a href="/#rede" className="hover:text-[#007aff] transition-colors duration-300">Rede Própria</a>
-                    <a href="/#planos" className="hover:text-[#007aff] transition-colors duration-300">Tabela de Preços</a>
+                    <a href="#prevent" className="hover:text-[#007aff] transition-colors duration-300">Sobre</a>
+                    <a href="#planos" className="hover:text-[#007aff] transition-colors duration-300">Planos</a>
+                    <a href="#rede" className="hover:text-[#007aff] transition-colors duration-300">Rede Própria</a>
+                    <a href="#diferenciais" className="hover:text-[#007aff] transition-colors duration-300">Diferenciais</a>
 
                     <button
                         onClick={sendMessage}
@@ -55,10 +55,10 @@ export function Header() {
             {/* Mobile Menu */}
             {isMenuOpen && (
                 <div className="md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg p-4 flex flex-col gap-4">
-                    <a href="/quem-somos" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Quem Somos</a>
-                    <a href="/#diferenciais" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Diferenciais</a>
-                    <a href="/#rede" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Rede Própria</a>
-                    <a href="/#planos" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Tabela de Preços</a>
+                    <a href="#prevent" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Sobre</a>
+                    <a href="#planos" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Planos</a>
+                    <a href="#rede" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Rede Própria</a>
+                    <a href="#diferenciais" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Diferenciais</a>
                     <button
                         onClick={sendMessage}
                         className="w-full bg-[#007aff] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"
