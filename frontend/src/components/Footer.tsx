@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Mail, Phone } from 'lucide-react';
+// ... imports removed
 
 export function Footer() {
     return (
@@ -15,11 +15,6 @@ export function Footer() {
                     <p className="text-gray-400 text-sm leading-relaxed max-w-sm mb-6">
                         A primeira operadora de saúde voltada para o Adulto+! Pioneira em medicina especializada e na valorização da qualidade de vida.
                     </p>
-                    <div className="flex gap-4">
-                        {/* Social Placeholders */}
-                        <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-[#007aff] transition-colors cursor-pointer"><Mail className="w-4 h-4" /></div>
-                        <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-[#007aff] transition-colors cursor-pointer"><Phone className="w-4 h-4" /></div>
-                    </div>
                 </div>
 
                 <div>
