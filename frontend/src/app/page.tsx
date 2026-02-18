@@ -1,6 +1,6 @@
 'use client';
 
-import { Phone, CheckCircle, MapPin, Building, ShieldCheck, Mail, Menu, MessageCircle, Users, HeartPulse, Clock } from 'lucide-react';
+import { Phone, CheckCircle, MapPin, Building, ShieldCheck, Mail, Menu, MessageCircle, Users, HeartPulse, Clock, Smartphone, Video } from 'lucide-react';
 import { ChatWidget } from '@/components/ChatWidget';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
