@@ -30,8 +30,8 @@ export function Footer() {
             <div className="container mx-auto px-4 mt-16 pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
                 <p>© {new Date().getFullYear()} Todos os direitos reservados.</p>
                 <div className="flex gap-4 mt-4 md:mt-0">
-                    <a href="#" className="hover:text-white">Política de Privacidade</a>
-                    <a href="#" className="hover:text-white">Termos de Uso</a>
+                    <a href="/politica-privacidade" className="hover:text-white">Política de Privacidade</a>
+                    <a href="/termos-uso" className="hover:text-white">Termos de Uso</a>
                 </div>
             </div>
         </footer>
