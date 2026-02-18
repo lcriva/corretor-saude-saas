@@ -7,9 +7,26 @@ const api = axios.create({
 // Interceptor para adicionar token em todas as requisições
 api.interceptors.request.use((config) => {
     if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token');
+        let token = localStorage.getItem('token');
+
+        // Fallback: Tentar pegar do registro do Zustand (auth-storage)
+        if (!token) {
+            try {
+                const storage = localStorage.getItem('auth-storage');
+                if (storage) {
+                    const parsed = JSON.parse(storage);
+                    token = parsed.state?.token;
+                }
+            } catch (e) {
+                console.error('Erro ao ler auth-storage', e);
+            }
+        }
+
         if (token) {
+            console.log('🔑 Interceptor: Token anexado (Length:', token.length, ')');
             config.headers.Authorization = `Bearer ${token}`;
+        } else {
+            console.warn('⚠️ Interceptor: Nenhum token encontrado no localStorage');
         }
     }
     // Bypass ngrok browser warning for API calls
