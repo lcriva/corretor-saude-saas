@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 // @ts-ignore
-const { PDFParse } = require('pdf-parse');
+// const { PDFParse } = require('pdf-parse'); // Moved inside function
 
 let cachedPdfContent: string | null = null;
 const PDF_PATH = path.join(__dirname, '../archives/tabela-valores-prevent-senior.pdf');
@@ -20,9 +20,9 @@ export const getPdfContent = async (): Promise<string> => {
         }
 
         const buffer = fs.readFileSync(PDF_PATH);
-        const parser = new PDFParse({ data: buffer });
-        const data = await parser.getText();
-        await parser.destroy();
+        // Lazy load pdf-parse to avoid global scope pollution (JSON.parse breakage)
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(buffer);
 
         // Limpar o texto para remover espaços excessivos e caracteres estranhos
         cachedPdfContent = data.text
