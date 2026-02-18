@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { dashboard } from '@/lib/api';
 import {
     Users, FileText, TrendingUp, DollarSign,
-    AlertCircle, Clock, Bell, Loader2, LogOut, UserPlus
+    AlertCircle, Clock, Bell, Loader2, LogOut, UserPlus, Smartphone
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -80,6 +80,13 @@ export default function AdminDashboardPage() {
                         >
                             <Users className="w-5 h-5" />
                             Ver Leads
+                        </button>
+                        <button
+                            onClick={() => router.push('/admin/whatsapp')}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-colors"
+                        >
+                            <Smartphone className="w-5 h-5" />
+                            WhatsApp
                         </button>
                         <button
                             onClick={handleLogout}

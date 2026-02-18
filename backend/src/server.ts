@@ -6,6 +6,7 @@ import leadsRoutes from './routes/leads';
 import propostasRoutes from './routes/propostas';
 import dashboardRoutes from './routes/dashboard';
 import chatRoutes from './routes/chat';
+import whatsappRoutes from './routes/whatsapp';
 import { getWhatsAppService } from './services/whatsapp';
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/api/leads', leadsRoutes);
 app.use('/api/propostas', propostasRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

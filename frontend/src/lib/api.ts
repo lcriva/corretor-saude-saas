@@ -69,6 +69,14 @@ export const leads = {
     delete: (id: string) => api.delete(`/leads/${id}`),
     addInteracao: (id: string, data: any) =>
         api.post(`/leads/${id}/interacoes`, data),
+    getChartData: (period: string) => api.get(`/dashboard/charts?period=${period}`)
+};
+
+// Whatsapp
+export const whatsapp = {
+    getStatus: () => api.get('/whatsapp/status'),
+    connect: () => api.post('/whatsapp/connect'),
+    disconnect: () => api.post('/whatsapp/disconnect')
 };
 
 // Propostas
