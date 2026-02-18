@@ -198,7 +198,7 @@ export default function LeadsPage() {
                 <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => router.push('/dashboard')}
+                            onClick={() => router.push('/admin')}
                             className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
                         >
                             <Home className="w-5 h-5" />

@@ -34,11 +34,11 @@ export default function LoginPage() {
                 });
 
                 login(response.data.token, response.data.user);
-                router.push('/dashboard');
+                router.push('/admin');
             } else {
                 const response = await auth.register(formData);
                 login(response.data.token, response.data.user);
-                router.push('/dashboard');
+                router.push('/admin');
             }
         } catch (err: any) {
             console.error('Login Error:', err);
