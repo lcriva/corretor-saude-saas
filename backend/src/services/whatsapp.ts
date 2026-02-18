@@ -241,7 +241,7 @@ class WhatsAppService {
     }
 
     private async findActiveLeadId(remoteJid: string): Promise<string | null> {
-        const telefone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '');
+        const telefone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
         try {
             const lead = await prisma.lead.findFirst({
                 where: {
@@ -381,7 +381,7 @@ class WhatsAppService {
     }
 
     private async getOrCreateLead(remoteJid: string, userId?: string): Promise<string | undefined> {
-        const telefone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '');
+        const telefone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
 
         try {
             // Tentar encontrar lead em andamento (não finalizado)
