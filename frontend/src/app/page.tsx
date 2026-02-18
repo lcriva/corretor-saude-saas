@@ -266,23 +266,7 @@ export default function PreventLandingPage() {
                         </ul>
                     </div>
 
-                    <div>
-                        <h4 className="font-bold mb-6 text-lg">Fale Conosco</h4>
-                        <ul className="space-y-4 text-gray-400 text-sm">
-                            <li className="flex items-center gap-3">
-                                <Phone className="w-5 h-5 text-[#007aff]" />
-                                <span className="font-bold text-white text-lg">{phoneNumber}</span>
-                            </li>
-                            <li className="flex items-center gap-3">
-                                <Mail className="w-5 h-5 text-[#007aff]" />
-                                <span>contato@acessacompany.com.br</span>
-                            </li>
-                        </ul>
-                        <div className="mt-8 pt-6 border-t border-gray-800">
-                            <p className="text-xs text-gray-500 font-bold mb-1">{companyName}</p>
-                            <p className="text-xs text-gray-600">CNPJ: 00.000.000/0001-00</p>
-                        </div>
-                    </div>
+
                 </div>
                 <div className="container mx-auto px-4 mt-16 pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
                     <p>© {new Date().getFullYear()} Todos os direitos reservados.</p>
