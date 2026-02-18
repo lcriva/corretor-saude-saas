@@ -76,7 +76,7 @@ class WhatsAppService {
 
                     console.log('\n═══════════════════════════════════════════');
                     console.log('🔒 CONFIGURAÇÕES:');
-                    console.log('   Bot conectado: +55 11 98803-2890');
+                    console.log('   Bot conectado: +55 11 96760-9811');
                     console.log('   Autorizado: Todos (Restrição removida)');
                     console.log('   🚫 Ignora mensagens de grupos');
                     console.log('   📧 Coleta email no final da conversa');
@@ -146,7 +146,7 @@ class WhatsAppService {
         // =============================================================
 
         // ===== RESTRIÇÃO DE PERFORMANCE: APENAS UM NÚMERO =====
-        const allowList = ['5511988032890', '32027940245757', '5511915770166', '238078643966151', '5511941506579', '169462397432061'];
+        const allowList = ['5511988032890', '5511967609811', '32027940245757', '5511915770166', '238078643966151', '5511941506579', '169462397432061'];
         const isAllowed = allowList.some(id => remoteJid.includes(id));
 
         if (!isAllowed) {

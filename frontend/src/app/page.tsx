@@ -4,7 +4,7 @@ import { Phone, CheckCircle, MapPin, Building, ShieldCheck, Mail, Menu, MessageC
 import { ChatWidget } from '@/components/ChatWidget';
 
 export default function PreventLandingPage() {
-    const phoneNumber = "(11) 988032890";
+    const phoneNumber = "(11) 96760-9811";
     const companyName = "Acesso Company Seguros";
 
     // Dados exatos capturados do site
@@ -22,7 +22,7 @@ export default function PreventLandingPage() {
 
     const sendMessage = () => {
         const msg = "Olá! Gostaria de uma cotação do Prevent Senior.";
-        window.open(`https://wa.me/5511988032890?text=${encodeURIComponent(msg)}`, '_blank');
+        window.open(`https://wa.me/5511967609811?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
     const openChat = () => {
