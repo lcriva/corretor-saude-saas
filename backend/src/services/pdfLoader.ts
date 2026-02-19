@@ -27,7 +27,7 @@ export const getPdfContent = async (): Promise<string> => {
         }
 
         let fullContent = '';
-        const pdfParse = require('pdf-parse');
+
 
         for (const file of files) {
             const filePath = path.join(ARCHIVES_DIR, file);
@@ -35,7 +35,9 @@ export const getPdfContent = async (): Promise<string> => {
 
             try {
                 const buffer = fs.readFileSync(filePath);
-                const data = await pdfParse(buffer);
+                const { PDFParse } = require('pdf-parse');
+                const parser = new PDFParse({ data: buffer });
+                const data = await parser.getText();
 
                 // Limpeza básica
                 const text = data.text.replace(/\n\s*\n/g, '\n').trim();
