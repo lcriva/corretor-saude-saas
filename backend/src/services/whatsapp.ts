@@ -146,13 +146,7 @@ class WhatsAppService {
         // =============================================================
 
         // ===== RESTRIÇÃO DE PERFORMANCE: APENAS UM NÚMERO =====
-        const allowList = ['5511988032890', '5511967609811', '32027940245757', '5511915770166', '238078643966151', '5511941506579', '169462397432061'];
-        const isAllowed = allowList.some(id => remoteJid.includes(id));
-
-        if (!isAllowed) {
-            console.log(`🚫 Ignorado por filtro de número: ${remoteJid}`);
-            return;
-        }
+        // REMOVIDO: Bot liberado para todos
         // ======================================================
 
         console.log('DEBUG: handleMessage chamado', JSON.stringify(message.key)); // DEBUG
