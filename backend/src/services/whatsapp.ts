@@ -522,18 +522,16 @@ class WhatsAppService {
             }
         });
 
-        // A IA já deve ter apresentado os valores.
-        // Apenas confirmamos o recebimento e encerramos tecnicamente.
+        // A IA já deve ter apresentado os valores e solicitado os docs.
+        // Apenas reforçamos o contato do especialista e encerramos tecnicamente.
 
-        let mensagemFinal = `✅ Tudo certo! Já registrei seu interesse.\n`;
-        mensagemFinal += `Um de nossos corretores entrará em contato em breve para formalizar.\n`;
-
-        mensagemFinal += `\n📄 *Para fechar, por favor separe/envie:*\n`;
+        let mensagemFinal = `✅ *Tudo certo!* Já registrei seu interesse.\n\n`;
+        mensagemFinal += `Como solicitado, por favor *envie aqui no WhatsApp foto dos seguintes documentos* para adiantarmos:\n`;
         mensagemFinal += `- RG ou CNH\n`;
         mensagemFinal += `- Comprovante de Residência\n`;
-        mensagemFinal += `- Cartão do SUS\n`;
-
-        mensagemFinal += `\nObrigado!`;
+        mensagemFinal += `- Cartão do SUS\n\n`;
+        mensagemFinal += `👨‍💼 *Nosso especialista vai te chamar em breve* para confirmar os dados e finalizar a proposta.\n`;
+        mensagemFinal += `Obrigado pela preferência!`;
 
         await this.enviarMensagem(remoteJid, mensagemFinal);
         console.log(`✅ Conversa finalizada e lead salvo!`);
