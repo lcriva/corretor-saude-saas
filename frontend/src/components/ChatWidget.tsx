@@ -47,7 +47,7 @@ export function ChatWidget() {
             initChat();
             if (messages.length === 0 && !leadId) {
                 // startSession(); // REMOVED: Lazy init to avoid empty leads
-                setMessages([{ role: 'assistant', content: "Olá! Sou a Ana, sua assistente virtual. Como posso ajudar você a encontrar o melhor plano da Prevent Senior hoje?" }]);
+                setMessages([{ role: 'assistant', content: "Olá! Sou a MarIA, sua assistente virtual. Como posso ajudar você a encontrar o melhor plano da Prevent Senior hoje?" }]);
             }
         }
     }, [isOpen]);
@@ -62,13 +62,8 @@ export function ChatWidget() {
     const startSession = async () => {
         setIsLoading(true);
         try {
-            // Chamada direta ao fetch pois o 'api' lib pode ter base url diferente ou auth headers
-            // Assumindo que o backend roda na mesma base URL ou configurada
-            const res = await fetch('http://localhost:3001/api/chat/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await res.json();
+            const res = await api.post('/chat/start');
+            const data = res.data;
 
             if (data.leadId) {
                 setLeadId(data.leadId);
@@ -94,19 +89,17 @@ export function ChatWidget() {
             // Se por acaso não tiver leadId ainda (erro de init), tenta criar
             let currentLeadId = leadId;
             if (!currentLeadId) {
-                const resStart = await fetch('http://localhost:3001/api/chat/start', { method: 'POST' });
-                const dataStart = await resStart.json();
-                currentLeadId = dataStart.leadId;
+                const resStart = await api.post('/chat/start');
+                currentLeadId = resStart.data.leadId;
                 setLeadId(currentLeadId);
                 localStorage.setItem('chat_lead_id', currentLeadId!);
             }
 
-            const res = await fetch('http://localhost:3001/api/chat/message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leadId: currentLeadId, message: userMsg })
+            const res = await api.post('/chat/message', {
+                leadId: currentLeadId,
+                message: userMsg
             });
-            const data = await res.json();
+            const data = res.data;
 
             if (data.text) {
                 setMessages(prev => [...prev, { role: 'assistant', content: data.text }]);
@@ -139,7 +132,7 @@ export function ChatWidget() {
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-[#007aff] rounded-full flex items-center justify-center font-bold">A</div>
                             <div>
-                                <h3 className="font-bold text-sm">Ana - Assistente Virtual</h3>
+                                <h3 className="font-bold text-sm">MarIA - Assistente Virtual</h3>
                                 <p className="text-xs text-green-400 flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span> Online
                                 </p>

@@ -22,7 +22,7 @@ router.post('/start', async (req, res) => {
         }
 
         const leadId = await chatService.createLead(brokerId, 'site_chat');
-        res.json({ leadId, message: "Olá! Sou a Ana, assistente virtual da Corretor Saúde Pro. Como posso ajudar com seu plano de saúde hoje?" });
+        res.json({ leadId, message: "Olá! Sou a MarIA, assistente virtual da Corretor Saúde Pro. Como posso ajudar com seu plano de saúde hoje?" });
     } catch (error) {
         console.error('Erro ao iniciar chat:', error);
         res.status(500).json({ error: 'Erro interno' });
