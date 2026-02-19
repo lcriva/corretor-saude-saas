@@ -496,7 +496,8 @@ class WhatsAppService {
                     email: dados.email,
                     percentualConclusao: Math.max(10, percentual),
                     idadesDependentes: dados.idadesDependentes || undefined, // Salvar array de idades
-                    scoreIA: this.calcularScoreSimples(dados.idade || 0, dados.dependentes || 0)
+                    scoreIA: this.calcularScoreSimples(dados.idade || 0, dados.dependentes || 0),
+                    jaPossuiPlano: dados.jaPossuiPlano
                 } as any
             });
             console.log(`💾 Lead ${leadId} atualizado! (${percentual}% concluído)`);
@@ -507,13 +508,21 @@ class WhatsAppService {
     }
 
     private async enviarPropostaFinal(remoteJid: string, leadId: string, dados: any) {
+        // Se demonstrou interesse em fechar, vira Lead Quente (negociacao)
+        // Se não, fica como Lead Morno (novo + 100%)
+        const novoStatus = dados.interesseEmFechar ? 'negociacao' : 'novo';
+
         // Atualizar status para finalizado
         await prisma.lead.update({
             where: { id: leadId },
-            data: { status: 'novo', percentualConclusao: 100 }
+            data: {
+                status: novoStatus,
+                percentualConclusao: 100,
+                jaPossuiPlano: dados.jaPossuiPlano // Persistir a informação se já possui plano
+            }
         });
 
-        // A IA já deve ter apresentado os valores. 
+        // A IA já deve ter apresentado os valores.
         // Apenas confirmamos o recebimento e encerramos tecnicamente.
 
         let mensagemFinal = `✅ Tudo certo! Já registrei seu interesse.\n`;

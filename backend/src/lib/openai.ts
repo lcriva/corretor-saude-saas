@@ -32,9 +32,10 @@ const tools = [
 
                     planoDesejado: { type: "string", description: "Nome do plano escolhido (ex: Enfermaria 44-58 anos)" },
                     valorPlano: { type: "string", description: "Valor mensal TOTAL do plano escolhido (apenas números ou texto, ex: '1200.00')" },
+                    interesseEmFechar: { type: "boolean", description: "TRUE se o cliente disser SIM que quer fechar o plano. FALSE se disser não ou estiver indeciso." },
 
                     email: { type: "string", description: "Email para contato (OBRIGATÓRIO)" },
-                    finalizado: { type: "boolean", description: "TRUE apenas APÓS você ter apresentado os valores da tabela e o usuário concordar em prosseguir. FALSE caso contrário." }
+                    finalizado: { type: "boolean", description: "TRUE apenas APÓS apresentar valores e obter resposta sobre interesse em fechar." }
                 },
                 required: ["finalizado"]
             }
