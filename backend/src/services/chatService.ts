@@ -158,12 +158,34 @@ export class ChatService {
                 dataToUpdate.percentualConclusao = dadosUt.percentualConclusao;
             }
 
+            // Persistir novos campos
+            if (dadosUt.jaPossuiPlano !== undefined) dataToUpdate.jaPossuiPlano = dadosUt.jaPossuiPlano;
+            if (dadosUt.planoDesejado) dataToUpdate.planoDesejado = dadosUt.planoDesejado;
+            if (dadosUt.dependentes !== undefined) dataToUpdate.dependentes = dadosUt.dependentes;
+            if (dadosUt.idadesDependentes) dataToUpdate.idadesDependentes = dadosUt.idadesDependentes;
+
+
             console.log('📝 Persistindo dados no banco:', dataToUpdate);
 
             await prisma.lead.update({
                 where: { id: leadId },
                 data: dataToUpdate
             });
+
+            // Lógica de Status (Novo -> Morno -> Quente/Negociação)
+            if (finalizado) {
+                const novoStatus = dados.interesseEmFechar ? 'negociacao' : 'morno';
+
+                console.log(`🔥 Atualizando status do Lead ${leadId} para: ${novoStatus}`);
+
+                await prisma.lead.update({
+                    where: { id: leadId },
+                    data: {
+                        status: novoStatus,
+                        percentualConclusao: 100
+                    }
+                });
+            }
         } catch (error) {
             console.error('Erro ao atualizar lead:', error);
         }
