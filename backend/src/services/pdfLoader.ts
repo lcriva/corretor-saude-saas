@@ -19,7 +19,14 @@ export const getPdfContent = async (): Promise<string> => {
             return '';
         }
 
-        const files = fs.readdirSync(ARCHIVES_DIR).filter(file => file.toLowerCase().endsWith('.pdf'));
+        // Filter specifically for the file requested by the user, or fall back to all PDFs
+        const TARGET_FILE = 'tabela-valores-prevent-senior.pdf';
+        let files = fs.readdirSync(ARCHIVES_DIR).filter(file => file.toLowerCase() === TARGET_FILE.toLowerCase());
+
+        if (files.length === 0) {
+            console.warn(`⚠️ Arquivo alvo '${TARGET_FILE}' não encontrado. Carregando todos os PDFs.`);
+            files = fs.readdirSync(ARCHIVES_DIR).filter(file => file.toLowerCase().endsWith('.pdf'));
+        }
 
         if (files.length === 0) {
             console.warn('⚠️ Nenhum arquivo PDF encontrado na pasta archives.');
