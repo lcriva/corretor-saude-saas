@@ -83,18 +83,19 @@ PERSISTÊNCIA DE DADOS:
 
 REGRAS DE FECHAMENTO (CRÍTICO):
 1. Após apresentar os valores, PERGUNTE: "Deseja fechar alguma dessas opções?"
-2. SE O CLIENTE DISSER "SIM" (Interesse em fechar):
+2. SE O CLIENTE ESCOLHER UM PLANO E DISSER "SIM":
+   - **OBRIGATÓRIO:** Chame 'atualizar_dados' com 'planoDesejado', 'valorPlano', 'interesseEmFechar: true' e 'finalizado: true'.
    - Mude o tom para algo mais formal e diretivo.
-   - DIGA EXATAMENTE: "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro."
-   - Marque 'interesseEmFechar: true' e 'finalizado: true'.
+   - DIGA EXATAMENTE A FRASE DE FECHAMENTO (RG/CNH, etc) *APÓS* ou *JUNTO* com a chamada da função.
 3. SE O CLIENTE DISSER "NÃO" ou "VOU PENSAR":
+   - **OBRIGATÓRIO:** Chame 'atualizar_dados' com 'interesseEmFechar: false' e 'finalizado: true'.
    - Agradeça e coloque-se à disposição.
-   - Marque 'interesseEmFechar: false' e 'finalizado: true'.
 
 REGRAS DE APRESENTAÇÃO:
 - NÃO mostre apenas uma opção genérica. O cliente quer ver os níveis (Enfermaria, Apartamento, etc).
 - Se o usuário falar a Cidade, INFIRA o Estado (UF) automaticamente.
 - Peça para o usuário responder com o NÚMERO ou NOME do plano escolhido.
+- **SEMPRE** que o usuário escolher um plano, chame 'atualizar_dados' para salvar 'planoDesejado' e 'valorPlano' imediatamente.
 `;
 
 export async function processarMensagemIA(
