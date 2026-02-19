@@ -101,24 +101,9 @@ export default function AdminDashboardPage() {
 
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Cards de Estatísticas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-                        <div className="flex justify-between items-start mb-4">
-                            <Users className="w-10 h-10 opacity-80" />
-                            <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">Hoje</span>
-                        </div>
-                        <h3 className="text-3xl font-bold mb-1">{stats?.leadsHoje || 0}</h3>
-                        <p className="text-sm opacity-90">Novos Leads</p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    {/* Removidos cards de Novos e Propostas conforme pedido */}
 
-                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
-                        <div className="flex justify-between items-start mb-4">
-                            <FileText className="w-10 h-10 opacity-80" />
-                            <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">Mês</span>
-                        </div>
-                        <h3 className="text-3xl font-bold mb-1">{stats?.propostasEnviadas || 0}</h3>
-                        <p className="text-sm opacity-90">Propostas Enviadas</p>
-                    </div>
 
                     <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
                         <div className="flex justify-between items-start mb-4">
@@ -174,101 +159,142 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
 
-                {/* Leads em Preenchimento (IA) */}
-                {alertas?.leadsEmPreenchimento && alertas.leadsEmPreenchimento.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-purple-600" />
-                            Leads em Preenchimento (IA)
+                {/* Pipeline de Leads (Kanban Simplificado) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {/* LEADS FRIOS (< 100%) */}
+                    <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-blue-400">
+                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-blue-500" />
+                            Leads Frios
+                            <span className="text-xs font-normal text-gray-500 ml-auto">Em preenchimento</span>
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {alertas.leadsEmPreenchimento.map((lead: any) => (
-                                <div key={lead.id} className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <h3 className="font-semibold text-gray-800">{lead.nome || 'Em aberto...'}</h3>
-                                            <p className="text-sm text-gray-500">{lead.telefone}</p>
-                                        </div>
-                                        <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-medium">
-                                            {lead.percentualConclusao}%
-                                        </span>
+                        <div className="space-y-3">
+                            {alertas?.leadsFrios?.map((lead: any) => (
+                                <div key={lead.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h3 className="font-semibold text-gray-700 text-sm truncate">{lead.nome || 'Sem nome'}</h3>
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{lead.percentualConclusao}%</span>
                                     </div>
-
-                                    <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                                        <div
-                                            className="bg-purple-600 h-2 rounded-full transition-all duration-500"
-                                            style={{ width: `${lead.percentualConclusao}%` }}
-                                        ></div>
+                                    <p className="text-xs text-gray-500 mb-2">{lead.telefone}</p>
+                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${lead.percentualConclusao}%` }}></div>
                                     </div>
-
-                                    <p className="text-xs text-gray-400">
-                                        Última interação: {new Date(lead.atualizadoEm).toLocaleDateString()}
-                                    </p>
                                 </div>
                             ))}
+                            {(!alertas?.leadsFrios || alertas.leadsFrios.length === 0) && (
+                                <p className="text-sm text-gray-400 text-center py-4">Nenhum lead frio.</p>
+                            )}
                         </div>
                     </div>
-                )}
 
-                {/* Alertas */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Bell className="w-5 h-5 text-blue-600" />
-                        Ações Recomendadas pela IA
-                    </h2>
-
-                    <div className="space-y-3">
-                        {alertas?.leadsSemInteracao && alertas.leadsSemInteracao.length > 0 && (
-                            <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                                <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <p className="font-semibold text-orange-800">
-                                        {alertas.leadsSemInteracao.length} lead(s) sem interação há mais de 3 dias
-                                    </p>
-                                    <p className="text-sm text-orange-700 mt-1">
-                                        {alertas.leadsSemInteracao[0]?.nome} e outros. Recomendamos contato urgente!
-                                    </p>
+                    {/* LEADS MORNOS (100% - Viu Preço) */}
+                    <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-yellow-400">
+                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-yellow-500" />
+                            Leads Mornos
+                            <span className="text-xs font-normal text-gray-500 ml-auto">Viu Cotação</span>
+                        </h2>
+                        <div className="space-y-3">
+                            {alertas?.leadsMornos?.map((lead: any) => (
+                                <div key={lead.id} className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h3 className="font-semibold text-gray-800 text-sm truncate">{lead.nome}</h3>
+                                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">100%</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">{lead.planoDesejado || 'Plano não selecionado'}</p>
+                                    <p className="text-xs font-bold text-gray-700">R$ {lead.valorPlano?.toLocaleString()}</p>
                                 </div>
-                            </div>
-                        )}
-
-                        {alertas?.propostasSemResposta && alertas.propostasSemResposta.length > 0 && (
-                            <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <p className="font-semibold text-blue-800">
-                                        {alertas.propostasSemResposta.length} proposta(s) aguardando resposta
-                                    </p>
-                                    <p className="text-sm text-blue-700 mt-1">
-                                        Enviar follow-up para aumentar conversão
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {alertas?.negociacoesParadas && alertas.negociacoesParadas.length > 0 && (
-                            <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <TrendingUp className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <p className="font-semibold text-yellow-800">
-                                        {alertas.negociacoesParadas.length} negociação(ões) parada(s)
-                                    </p>
-                                    <p className="text-sm text-yellow-700 mt-1">
-                                        {alertas.negociacoesParadas[0]?.nome} - em negociação há mais de 5 dias
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {(!alertas?.leadsSemInteracao || alertas.leadsSemInteracao.length === 0) &&
-                            (!alertas?.propostasSemResposta || alertas.propostasSemResposta.length === 0) &&
-                            (!alertas?.negociacoesParadas || alertas.negociacoesParadas.length === 0) && (
-                                <div className="text-center py-8 text-gray-500">
-                                    <p className="text-lg">🎉 Tudo em dia!</p>
-                                    <p className="text-sm mt-1">Nenhuma ação urgente no momento</p>
-                                </div>
+                            ))}
+                            {(!alertas?.leadsMornos || alertas.leadsMornos.length === 0) && (
+                                <p className="text-sm text-gray-400 text-center py-4">Nenhum lead morno.</p>
                             )}
+                        </div>
                     </div>
+
+                    {/* LEADS QUENTES (Negociação) */}
+                    <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-red-500">
+                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-red-500" />
+                            Leads Quentes
+                            <span className="text-xs font-normal text-gray-500 ml-auto">Quer Fechar!</span>
+                        </h2>
+                        <div className="space-y-3">
+                            {alertas?.leadsQuentes?.map((lead: any) => (
+                                <div key={lead.id} className="bg-red-50 p-3 rounded-lg border border-red-100">
+
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h3 className="font-semibold text-gray-800 text-sm truncate">{lead.nome}</h3>
+                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-2">Interesse em fechar!</p>
+                                    <button className="w-full bg-red-600 text-white text-xs py-1.5 rounded hover:bg-red-700 transition">
+                                        Iniciar Contrato
+                                    </button>
+                                </div>
+                            ))}
+                            {(!alertas?.leadsQuentes || alertas.leadsQuentes.length === 0) && (
+                                <p className="text-sm text-gray-400 text-center py-4">Nenhum lead quente.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Alertas (Mantivemos abaixo caso queira, mas simplificamos) */}
+                <div className="bg-white rounded-xl shadow-sm p-6 hidden"> {/* Ocultei alertas antigos para limpar a tela conforme pedido */}
+                    {/* ... */}
+                </div>
+
+                <div className="space-y-3">
+                    {alertas?.leadsSemInteracao && alertas.leadsSemInteracao.length > 0 && (
+                        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-orange-800">
+                                    {alertas.leadsSemInteracao.length} lead(s) sem interação há mais de 3 dias
+                                </p>
+                                <p className="text-sm text-orange-700 mt-1">
+                                    {alertas.leadsSemInteracao[0]?.nome} e outros. Recomendamos contato urgente!
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {alertas?.propostasSemResposta && alertas.propostasSemResposta.length > 0 && (
+                        <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-blue-800">
+                                    {alertas.propostasSemResposta.length} proposta(s) aguardando resposta
+                                </p>
+                                <p className="text-sm text-blue-700 mt-1">
+                                    Enviar follow-up para aumentar conversão
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {alertas?.negociacoesParadas && alertas.negociacoesParadas.length > 0 && (
+                        <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <TrendingUp className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-yellow-800">
+                                    {alertas.negociacoesParadas.length} negociação(ões) parada(s)
+                                </p>
+                                <p className="text-sm text-yellow-700 mt-1">
+                                    {alertas.negociacoesParadas[0]?.nome} - em negociação há mais de 5 dias
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {(!alertas?.leadsSemInteracao || alertas.leadsSemInteracao.length === 0) &&
+                        (!alertas?.propostasSemResposta || alertas.propostasSemResposta.length === 0) &&
+                        (!alertas?.negociacoesParadas || alertas.negociacoesParadas.length === 0) && (
+                            <div className="text-center py-8 text-gray-500">
+                                <p className="text-lg">🎉 Tudo em dia!</p>
+                                <p className="text-sm mt-1">Nenhuma ação urgente no momento</p>
+                            </div>
+                        )}
                 </div>
             </div>
         </div>

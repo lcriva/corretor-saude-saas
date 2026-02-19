@@ -168,22 +168,62 @@ router.get('/alertas', async (req, res) => {
             take: 5
         });
 
-        // Leads em preenchimento (IA em andamento)
-        const leadsEmPreenchimento = await prisma.lead.findMany({
+        // Leads Leads Frios (Em preenchimento < 100% e status = novo)
+        const leadsFrios = await prisma.lead.findMany({
             where: {
                 userId: req.userId,
                 status: 'novo',
-                percentualConclusao: { lt: 100, gt: 0 }
+                percentualConclusao: { lt: 100 }
             },
-            take: 5,
+            take: 20,
+            orderBy: { atualizadoEm: 'desc' }
+        });
+
+        // Leads Mornos (100% preenchido mas ainda status = novo, ou seja, viu a proposta mas não fechou/negociou)
+        const leadsMornos = await prisma.lead.findMany({
+            where: {
+                userId: req.userId,
+                status: 'novo',
+                percentualConclusao: 100
+            },
+            take: 20,
+            orderBy: { atualizadoEm: 'desc' }
+        });
+
+        // Leads Quentes (Status = negociacao ou fechado recentemente)
+        // O usuário pediu "quando o usuário diz que tem interesse em fechar".
+        // No whatsapp.ts, quando finaliza, muda status para 'novo' mas 100%. 
+        // Vamos ajustar: Se o usuário diz "topo fechar", a IA deve setar finalizado=true.
+        // O código atual do whatsapp.ts mantem status 'novo' após finalizar proposta.
+        // Vamos considerar 'Morno' como quem completou (100%).
+        // Vamos considerar 'Quente' quem explicitamente mudamos o status para 'negociacao' (manual ou IA - precisamos garantir que IA mude para negociação)
+
+        // CORREÇÃO: No whatsapp.ts modifiquei para setar 'finalizado' com 100%.
+        // Se a IA finalizar, é um lead que viu preço. É 'Morno'.
+        // Se o usuário disser "quero fechar", a IA deveria identificar.
+        // Por enquanto, vamos usar a regra:
+        // Frio: < 100%
+        // Morno: = 100% (Viu preços)
+        // Quente: Status = 'negociacao' (Precisa ser setado manualmente ou via IA se ela detectar intenção forte)
+
+        const leadsQuentes = await prisma.lead.findMany({
+            where: {
+                userId: req.userId,
+                status: 'negociacao'
+            },
+            take: 20,
             orderBy: { atualizadoEm: 'desc' }
         });
 
         res.json({
+            leadsFrios,
+            leadsMornos,
+            leadsQuentes,
             leadsSemInteracao,
             propostasSemResposta,
             negociacoesParadas,
-            leadsEmPreenchimento
+            // Mantendo compatibilidade caso fronte use, mas vamos remover do front
+            leadsEmPreenchimento: leadsFrios
         });
     } catch (error) {
         console.error('Erro ao buscar alertas:', error);

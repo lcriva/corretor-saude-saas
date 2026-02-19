@@ -41,6 +41,8 @@ model Lead {
   scoreIA       Float?
   percentualConclusao Int @default(0)
   observacoes   String?
+  lastFollowUpAt DateTime?
+  followUpCount Int      @default(0)
   
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)

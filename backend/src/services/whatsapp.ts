@@ -203,7 +203,28 @@ class WhatsAppService {
                 const msgLimpa = messageText.trim().toLowerCase();
                 const ehGatilho = gatilhos.some(g => msgLimpa.includes(g) || msgLimpa === g);
 
+                if (ehGatilho) {
+                    // ... (Lógica de start abaixo)
+                }
+
+                // Check msg recusas
+                if (msgLimpa.includes('não quero continuar') || msgLimpa.includes('cancelar') || msgLimpa.includes('parar')) {
+                    console.log(`🚫 Usuário pediu para parar: ${remoteJid}`);
+                    await this.enviarMensagem(remoteJid, "Tudo bem, atendimento encerrado. Se mudar de ideia, é só chamar! 👋");
+
+                    // Se tiver lead ativo, marca como perdido
+                    const activeLeadId = await this.findActiveLeadId(remoteJid);
+                    if (activeLeadId) {
+                        await prisma.lead.update({
+                            where: { id: activeLeadId },
+                            data: { status: 'perdido' }
+                        });
+                    }
+                    return;
+                }
+
                 if (!ehGatilho) {
+                    // ... (rest of logic)
                     console.log(`ℹ️ Mensagem ignorada (não é a frase de início e sem sessão ativa): "${messageText}"`);
 
                     // FALLBACK: Avisar o usuário em vez de ignorar
@@ -599,58 +620,116 @@ class WhatsAppService {
     }
 
     private async checkInactivity() {
+        // Regras de Tempo (em ms)
+        const MSG_15_MIN = 15 * 60 * 1000;
+        const MSG_2_HORAS = 2 * 60 * 60 * 1000;
+        const LIMITE_2_DIAS = 2 * 24 * 60 * 60 * 1000; // 48h
+        const MAX_FOLLOWUPS = 20; // Limite de segurança para não spammar eternamente
+
         const agora = Date.now();
 
         for (const [remoteJid, state] of conversations.entries()) {
-            if (!this.sock) continue; // Não fazer nada se não estiver conectado
+            if (!this.sock) continue;
 
             const tempoInativo = agora - state.lastInteraction;
 
-            // Verificar se o lead já está finalizado ou com alto percentual
-            let leadFinalizado = false;
-            try {
-                if (state.leadId) {
-                    const lead = await prisma.lead.findUnique({ where: { id: state.leadId } });
-                    // Se já estiver como 'finalizado' ou 'negociacao', ou com 100%, não manda lembrete
-                    if (lead && (lead.status === 'finalizado' || lead.status === 'negociacao' || lead.percentualConclusao >= 100)) {
-                        leadFinalizado = true;
-                    }
+            // Busca lead no banco para saber status real
+            let lead = null;
+            if (state.leadId) {
+                try {
+                    lead = await prisma.lead.findUnique({ where: { id: state.leadId } });
+                } catch (err) {
+                    console.error("Erro ao verificar lead no job:", err);
+                    continue;
                 }
-            } catch (err) {
-                console.error("Erro ao verificar status do lead no job:", err);
             }
 
-            if (leadFinalizado) {
-                // Se já acabou, apenas remove do monitoramento se expirou muito tempo, mas sem mandar msg
-                if (tempoInativo >= TEMPO_EXPIRACAO) {
+            // Se não tem lead ou já finalizou/negociacao, remove da memória e segue
+            if (!lead || lead.status === 'finalizado' || lead.status === 'negociacao' || lead.status === 'perdido' || lead.percentualConclusao >= 100) {
+                if (tempoInativo >= 30 * 60 * 1000) { // 30 min de folga
                     conversations.delete(remoteJid);
-                    console.log(`🗑️ Conversa finalizada e inativa removida da memória: ${remoteJid}`);
                 }
                 continue;
             }
 
-            // 1. Enviar lembrete se passou do tempo e ainda não foi lembrado
-            if (tempoInativo >= TEMPO_LEMBRETE && !state.reminded) {
-                console.log(`⏰ Enviando lembrete para ${remoteJid} (${Math.round(tempoInativo / 1000)}s inativo)`);
+            // REGRA DE CANCELAMENTO (2 dias sem resposta)
+            // Se já mandamos N follow-ups e passou 2 dias desde a criação ou último update...
+            // A regra diz: "colocar uma mensagem depois de 2 dias que caso o cliente não deseja prosseguir... encerra"
+            const tempoDesdeCriacao = agora - new Date(lead.criadoEm).getTime();
 
-                try {
-                    await this.enviarMensagem(
-                        remoteJid,
-                        "Olá! 👋 Notei que não terminamos. Poderia me enviar os dados que faltam para eu conseguir gerar sua cotação completa? É rapidinho! 😉"
-                    );
-                    state.reminded = true;
-                    // Atualiza o estado no mapa
-                    conversations.set(remoteJid, state);
-                } catch (error) {
-                    console.error(`❌ Erro ao enviar lembrete para ${remoteJid}:`, error);
+            if (tempoDesdeCriacao >= LIMITE_2_DIAS) {
+                // Verifica se já mandamos a mensagem de encerramento
+                // Vamos usar uma flag no estado ou verificar se o status já é quase perdido
+                // Simplificação: Se passou 2 dias e ainda está 'novo', mandamos msg final e marcamos como perdido.
+
+                console.log(`💀 Lead ${lead.id} expirou (2 dias). Encerrando.`);
+
+                await this.enviarMensagem(
+                    remoteJid,
+                    "Olá! Como não tivemos mais retorno, estou encerrando seu atendimento por aqui. Caso queira retomar no futuro, é só chamar! 👋"
+                );
+
+                await prisma.lead.update({
+                    where: { id: lead.id },
+                    data: { status: 'perdido' } // Remove da lista de preenchimento
+                });
+
+                conversations.delete(remoteJid);
+                continue;
+            }
+
+            // LÓGICA DE FOLLOW-UP
+
+            const lastFollowUp = lead.lastFollowUpAt ? new Date(lead.lastFollowUpAt).getTime() : 0;
+            const followUpCount = lead.followUpCount || 0;
+
+            // 1º Follow-up: 15 minutos após última interação do LEAD (se count == 0)
+            // Lembre: lastInteraction atualiza quando o USER manda msg.
+            if (followUpCount === 0) {
+                if (tempoInativo >= MSG_15_MIN) {
+                    await this.enviarFollowUp(remoteJid, lead.id, 1);
                 }
             }
+            // Próximos Follow-ups: A cada 2 horas (baseado no último envio de follow-up)
+            else if (followUpCount < MAX_FOLLOWUPS) {
+                const tempoDesdeUltimoFollowUp = agora - lastFollowUp;
 
-            // 2. Limpar conversa se expirou
-            if (tempoInativo >= TEMPO_EXPIRACAO) {
-                console.log(`🧹 Removendo conversa inativa de ${remoteJid} (${Math.round(tempoInativo / 1000 / 60)}min)`);
-                conversations.delete(remoteJid);
+                if (tempoDesdeUltimoFollowUp >= MSG_2_HORAS) {
+                    await this.enviarFollowUp(remoteJid, lead.id, followUpCount + 1);
+                }
             }
+        }
+    }
+
+    private async enviarFollowUp(remoteJid: string, leadId: string, count: number) {
+        let mensagem = "";
+
+        if (count === 1) {
+            mensagem = "Olá! 👋 Ainda está por aí? Falta pouco para sua cotação!";
+        } else {
+            const opcoes = [
+                "Lembrete: Estou aguardando seus dados para calcular o melhor plano! 😉",
+                "Quer continuar a cotação? É só responder aqui!",
+                "Não esqueça de terminar o preenchimento para ver os valores! 🏥"
+            ];
+            mensagem = opcoes[Math.floor(Math.random() * opcoes.length)];
+        }
+
+        console.log(`⏰ Enviando Follow-up #${count} para ${remoteJid}`);
+
+        try {
+            await this.enviarMensagem(remoteJid, mensagem);
+
+            // Atualiza contador no banco
+            await prisma.lead.update({
+                where: { id: leadId },
+                data: {
+                    lastFollowUpAt: new Date(),
+                    followUpCount: { increment: 1 }
+                }
+            });
+        } catch (error) {
+            console.error(`❌ Erro ao enviar follow-up para ${remoteJid}:`, error);
         }
     }
 }
