@@ -103,16 +103,8 @@ export class ChatService {
 
                     await this.updateLead(leadId, { telefone: phone });
 
-                    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-                    const isSite = lead?.origem !== 'whatsapp';
-
                     session.step = ChatStep.FINISHED;
-
-                    if (isSite) {
-                        return "Perfeito! Já guardei seu contato.\n\nFique tranquilo, nosso especialista vai entrar em contato com você pelo WhatsApp em breve para finalizarmos tudo! 🚀💙";
-                    } else {
-                        return "Perfeito! Já guardei seu contato.\n\nPara finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve.";
-                    }
+                    return this.getFinalMessage(leadId);
                 }
 
                 case ChatStep.AWAITING_CURRENT_PLAN: {
@@ -245,8 +237,7 @@ export class ChatService {
                             return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\nPara finalizarmos, qual o seu **WhatsApp com DDD** para nosso especialista entrar em contato?";
                         } else {
                             session.step = ChatStep.FINISHED;
-                            return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\n" +
-                                "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+                            return this.getFinalMessage(leadId, "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.");
                         }
                     } else if (choice.includes('apartamento')) {
                         const valor = quotes.apartamento.total;
@@ -269,8 +260,7 @@ export class ChatService {
                             return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\nPara finalizarmos, qual o seu **WhatsApp com DDD** para nosso especialista entrar em contato?";
                         } else {
                             session.step = ChatStep.FINISHED;
-                            return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\n" +
-                                "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+                            return this.getFinalMessage(leadId, "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.");
                         }
                     } else {
                         return "Por favor, digite *Enfermaria* ou *Apartamento* para prosseguirmos com seu fechamento.";
@@ -307,6 +297,24 @@ export class ChatService {
         } catch (error) {
             console.error('[ChatService] ❌ Erro ao criar lead no banco:', error);
             throw error;
+        }
+    }
+
+    private async getFinalMessage(leadId: string, customIntro?: string): Promise<string> {
+        try {
+            const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+            const isSite = lead?.origem !== 'whatsapp';
+
+            const intro = customIntro ? customIntro + "\n\n" : "Perfeito! Já guardei seu contato.\n\n";
+
+            if (isSite) {
+                return intro + "Fique tranquilo, nosso especialista vai entrar em contato com você pelo WhatsApp que você informou em breve para finalizarmos tudo! 🚀💙";
+            } else {
+                return intro + "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+            }
+        } catch (error) {
+            console.error('[ChatService] Erro ao gerar mensagem final:', error);
+            return "Obrigado! Em breve nosso especialista entrará em contato.";
         }
     }
 

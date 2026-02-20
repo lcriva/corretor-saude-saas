@@ -8,9 +8,20 @@ const prisma = new PrismaClient();
 // Middleware simples para garantir que temos um Broker para atribuir o lead
 // Em produção, isso viria do domínio ou de um token público.
 // Aqui vamos pegar o PRIMEIRO usuário do banco como "Dono" do site.
+// Aqui vamos prioritariamente pegar o usuário 'Thiago' ou o primeiro do banco.
 async function getDefaultBrokerId() {
-    const user = await prisma.user.findFirst();
-    return user?.id;
+    const thiago = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { email: { contains: 'thiago' } },
+                { nome: { contains: 'Thiago' } }
+            ]
+        }
+    });
+    if (thiago) return thiago.id;
+
+    const first = await prisma.user.findFirst();
+    return first?.id;
 }
 
 // Iniciar conversa
