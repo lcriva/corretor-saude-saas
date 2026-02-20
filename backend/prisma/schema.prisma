@@ -37,7 +37,7 @@ model Lead {
   valorEstimado Float?
   valorPlano    Float?   // Novo campo
   planoDesejado String?  // Novo campo
-  jaPossuiPlano Boolean? // Novo campo
+  jaPossuiPlano String?  // Novo campo
   idadesDependentes Json? // Novo campo: Array de idades ex: [5, 12]
   scoreIA       Float?
   percentualConclusao Int @default(0)

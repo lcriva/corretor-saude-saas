@@ -48,8 +48,7 @@ export function ChatWidget() {
             initChat();
             trackPixelEvent('Contact', { type: 'ChatOpened' });
             if (messages.length === 0 && !leadId) {
-                // startSession(); // REMOVED: Lazy init to avoid empty leads
-                setMessages([{ role: 'assistant', content: "Olá! Sou a MarIA, sua assistente virtual. Como posso ajudar você a encontrar o melhor plano da Prevent Senior hoje?" }]);
+                startSession();
             }
         }
     }, [isOpen]);

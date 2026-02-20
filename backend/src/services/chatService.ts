@@ -1,17 +1,42 @@
 import { PrismaClient } from '@prisma/client';
 import { processarMensagemIA } from '../lib/openai';
 import OpenAI from 'openai';
+import { pricingService } from './pricingService';
 
 const prisma = new PrismaClient();
 
-export interface ChatSession {
-    leadId: string;
-    history: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
-    lastInteraction: number;
+export enum ChatStep {
+    START = 'START',
+    AWAITING_NAME = 'AWAITING_NAME',
+    AWAITING_CURRENT_PLAN = 'AWAITING_CURRENT_PLAN',
+    AWAITING_DEPENDENT_CHOICE = 'AWAITING_DEPENDENT_CHOICE',
+    AWAITING_DEPENDENT_COUNT = 'AWAITING_DEPENDENT_COUNT',
+    AWAITING_TITULAR_AGE = 'AWAITING_TITULAR_AGE',
+    AWAITING_DEPENDENT_AGES = 'AWAITING_DEPENDENT_AGES',
+    AWAITING_CITY = 'AWAITING_CITY',
+    AWAITING_PLAN_SELECTION = 'AWAITING_PLAN_SELECTION',
+    FINISHED = 'FINISHED'
 }
 
-// Mapa em memória para sessões de chat (pode ser substituído por Redis/DB no futuro)
-// Chave: leadId, Valor: Sessão
+export interface ChatSession {
+    leadId: string;
+    step: ChatStep;
+    history: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
+    lastInteraction: number;
+    collectedData: {
+        nome?: string;
+        jaPossuiPlano?: string;
+        isIndividual?: boolean;
+        dependentCount?: number;
+        titularAge?: number;
+        dependentAges: number[];
+        currentDependentIndex: number;
+        cidade?: string;
+        planoDesejado?: string;
+        valorPlano?: number;
+    };
+}
+
 const sessions = new Map<string, ChatSession>();
 
 export class ChatService {
@@ -20,12 +45,15 @@ export class ChatService {
         let session = sessions.get(leadId);
 
         if (!session) {
-            // Tentar recuperar histórico do banco (opcional, por enquanto inicia vazio ou com system)
-            // Se fosse persistente ideal, leríamos tabela 'Interacao'
             session = {
                 leadId,
+                step: ChatStep.START,
                 history: [],
-                lastInteraction: Date.now()
+                lastInteraction: Date.now(),
+                collectedData: {
+                    dependentAges: [],
+                    currentDependentIndex: 0
+                }
             };
             sessions.set(leadId, session);
         }
@@ -34,82 +62,190 @@ export class ChatService {
 
     async processUserMessage(leadId: string, messageText: string): Promise<string> {
         const session = await this.getOrCreateSession(leadId);
+        session.lastInteraction = Date.now();
 
-        // 1. Adicionar mensagem do usuário
         if (messageText) {
             session.history.push({ role: 'user', content: messageText });
-            // Salvar interação no banco (opcional para log)
             await this.saveInteraction(leadId, 'user', messageText);
         }
 
-        let loopCount = 0;
-        const MAX_LOOPS = 5;
-        let finalResponseText = '';
-
         try {
-            while (loopCount < MAX_LOOPS) {
-                loopCount++;
-                console.log(`🔄 ChatService Loop ${loopCount}/${MAX_LOOPS} - Lead: ${leadId}`);
+            switch (session.step) {
+                case ChatStep.START: {
+                    session.step = ChatStep.AWAITING_NAME;
+                    const msgIntro = "Olá! Eu sou a MarIA, especialista digital da Prevent Sênior 💙\n\n" +
+                        "A Prevent Sênior é a operadora especialista no Adulto+, oferecendo:\n" +
+                        "• Rede própria de alta qualidade (Hospitais Sancta Maggiore)\n" +
+                        "• Sem reajuste por faixa etária a partir dos 50 anos\n" +
+                        "• Programas de medicina preventiva exclusivos\n" +
+                        "• Atendimento humano e especializado\n\n" +
+                        "Para começarmos sua cotação, qual o seu **Nome Completo**?";
 
-                // Timeout de 20s
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('TIMEOUT_OPENAI')), 20000)
-                );
-
-                let respostaIA: any;
-                try {
-                    const webInstructions = "CANAL: SITE/WEBCHAT. \nPRIORIDADE 0: Você DEVE pedir o Telefone (WhatsApp) do cliente IMEDIATAMENTE no início da conversa, antes de perguntar o nome ou idade. \nExplique que é para o caso da conexão cair. \nSÓ DEPOIS de ter o telefone, prossiga para o Nome e os outros dados.";
-
-                    respostaIA = await Promise.race([
-                        processarMensagemIA(session.history, webInstructions),
-                        timeoutPromise
-                    ]);
-                } catch (timeoutErr: any) {
-                    console.error('⏱️ Timeout OpenAI');
-                    return "Estou demorando um pouco para pensar... Tente novamente em instantes.";
+                    await this.saveInteraction(leadId, 'assistant', msgIntro);
+                    return msgIntro;
                 }
 
-                if (respostaIA.msg) {
-                    session.history.push(respostaIA.msg);
+                case ChatStep.AWAITING_NAME: {
+                    session.collectedData.nome = messageText;
+                    await this.updateLead(leadId, { nome: messageText });
+
+                    session.step = ChatStep.AWAITING_CURRENT_PLAN;
+                    const msg = "Prazer em conhecer você! 😊\n\n" +
+                        "Você já possui algum plano de saúde atualmente? Se sim, qual?";
+                    return msg;
                 }
 
-                if (respostaIA.tipo === 'RESPOSTA' && respostaIA.texto) {
-                    finalResponseText = respostaIA.texto;
-                    await this.saveInteraction(leadId, 'assistant', finalResponseText);
-                    return finalResponseText;
+                case ChatStep.AWAITING_CURRENT_PLAN: {
+                    session.collectedData.jaPossuiPlano = messageText;
+                    await this.updateLead(leadId, { jaPossuiPlano: messageText });
 
-                } else if (respostaIA.tipo === 'ATUALIZAR' && respostaIA.dados) {
-                    console.log('🤖 Atualizando dados do lead:', respostaIA.dados);
-                    await this.updateLead(leadId, respostaIA.dados);
+                    session.step = ChatStep.AWAITING_DEPENDENT_CHOICE;
+                    const msg = "Entendido. Este plano seria somente para você ou deseja incluir esposa(o) e dependentes?";
+                    return msg;
+                }
 
-                    // Se finalizar
-                    if (respostaIA.dados.finalizado) {
-                        // Pode gerar uma mensagem final especial
+                case ChatStep.AWAITING_DEPENDENT_CHOICE: {
+                    const text = messageText.toLowerCase();
+                    if (text.includes('somente') || text.includes('apenas') || text.includes('só') || text.includes('individual') || (text.includes('não') && !text.includes('sim'))) {
+                        session.collectedData.isIndividual = true;
+                        session.collectedData.dependentCount = 0;
+                        session.step = ChatStep.AWAITING_TITULAR_AGE;
+                        return "Combinado. Qual é a sua idade?";
+                    } else {
+                        session.collectedData.isIndividual = false;
+                        session.step = ChatStep.AWAITING_DEPENDENT_COUNT;
+                        return "Certo! Além de você, quantas pessoas a mais deseja incluir no plano?";
+                    }
+                }
+
+                case ChatStep.AWAITING_DEPENDENT_COUNT: {
+                    const count = parseInt(messageText.replace(/\D/g, ''));
+                    if (isNaN(count) || count < 0) {
+                        return "Por favor, informe apenas o número de dependentes (ex: 1, 2...).";
+                    }
+                    session.collectedData.dependentCount = count;
+                    await this.updateLead(leadId, { dependentes: count });
+
+                    session.step = ChatStep.AWAITING_TITULAR_AGE;
+                    return "Entendido. Qual é a sua idade (Titular)?";
+                }
+
+                case ChatStep.AWAITING_TITULAR_AGE: {
+                    const age = parseInt(messageText.replace(/\D/g, ''));
+                    if (isNaN(age) || age < 0 || age > 120) {
+                        return "Por favor, informe uma idade válida (número inteiro).";
+                    }
+                    session.collectedData.titularAge = age;
+                    await this.updateLead(leadId, { idade: age });
+
+                    if (session.collectedData.dependentCount && session.collectedData.dependentCount > 0) {
+                        session.step = ChatStep.AWAITING_DEPENDENT_AGES;
+                        session.collectedData.currentDependentIndex = 1;
+                        return `Qual a idade do seu 1º dependente?`;
+                    } else {
+                        session.step = ChatStep.AWAITING_CITY;
+                        return "E para finalizar, em qual cidade você mora?";
+                    }
+                }
+
+                case ChatStep.AWAITING_DEPENDENT_AGES: {
+                    const age = parseInt(messageText.replace(/\D/g, ''));
+                    if (isNaN(age) || age < 0 || age > 120) {
+                        return "Por favor, informe uma idade válida.";
                     }
 
-                    // Devolver output da tool
-                    if (respostaIA.msg && respostaIA.msg.tool_calls) {
-                        for (const toolCall of respostaIA.msg.tool_calls) {
-                            session.history.push({
-                                role: 'tool',
-                                tool_call_id: toolCall.id,
-                                content: JSON.stringify({ success: true, message: "Dados salvos." })
-                            } as any);
-                        }
+                    session.collectedData.dependentAges.push(age);
+                    const currentIndex = session.collectedData.currentDependentIndex;
+                    const totalNeeded = session.collectedData.dependentCount || 0;
+
+                    if (currentIndex < totalNeeded) {
+                        session.collectedData.currentDependentIndex++;
+                        return `Qual a idade do seu ${session.collectedData.currentDependentIndex}º dependente?`;
+                    } else {
+                        await this.updateLead(leadId, { idadesDependentes: session.collectedData.dependentAges });
+
+                        let confirmMsg = "Perfeito. Registrei as idades: \n" +
+                            `- Titular: ${session.collectedData.titularAge} anos\n`;
+                        session.collectedData.dependentAges.forEach((a, i) => {
+                            confirmMsg += `- Dependente ${i + 1}: ${a} anos\n`;
+                        });
+
+                        session.step = ChatStep.AWAITING_CITY;
+                        confirmMsg += "\nQual cidade você mora?";
+                        return confirmMsg;
                     }
-                    continue; // Próximo loop
-                } else if (respostaIA.tipo === 'ERRO') {
-                    return "Desculpe, tive um erro técnico.";
                 }
 
-                break;
+                case ChatStep.AWAITING_CITY: {
+                    session.collectedData.cidade = messageText;
+                    await this.updateLead(leadId, { cidade: messageText });
+
+                    const ages = [session.collectedData.titularAge!, ...session.collectedData.dependentAges];
+                    const quotes = pricingService.buildQuote(ages);
+
+                    let response = "Excelente! Calculei as melhores opções para você na Prevent Sênior:\n\n";
+
+                    response += "🟢 **Opção 1:**\n";
+                    response += pricingService.formatQuote(quotes.enfermaria);
+
+                    response += "\n🔵 **Opção 2:**\n";
+                    response += pricingService.formatQuote(quotes.apartamento);
+
+                    response += "\n**Quer seguir com qual opção (Enfermaria ou Apartamento) para eu encaminhar para fechamento?**";
+
+                    session.step = ChatStep.AWAITING_PLAN_SELECTION;
+                    return response;
+                }
+
+                case ChatStep.AWAITING_PLAN_SELECTION: {
+                    const choice = messageText.toLowerCase();
+                    const ages = [session.collectedData.titularAge!, ...session.collectedData.dependentAges];
+                    const quotes = pricingService.buildQuote(ages);
+
+                    if (choice.includes('enfermaria')) {
+                        const valor = quotes.enfermaria.total;
+                        session.collectedData.planoDesejado = "Enfermaria";
+                        session.collectedData.valorPlano = valor;
+                        session.step = ChatStep.FINISHED;
+                        await this.updateLead(leadId, {
+                            planoDesejado: "Enfermaria",
+                            valorPlano: valor,
+                            valorEstimado: valor,
+                            status: 'negociacao',
+                            percentualConclusao: 100
+                        });
+                        return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\n" +
+                            "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+                    } else if (choice.includes('apartamento')) {
+                        const valor = quotes.apartamento.total;
+                        session.collectedData.planoDesejado = "Apartamento";
+                        session.collectedData.valorPlano = valor;
+                        session.step = ChatStep.FINISHED;
+                        await this.updateLead(leadId, {
+                            planoDesejado: "Apartamento",
+                            valorPlano: valor,
+                            valorEstimado: valor,
+                            status: 'negociacao',
+                            percentualConclusao: 100
+                        });
+                        return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\n" +
+                            "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+                    } else {
+                        return "Por favor, digite *Enfermaria* ou *Apartamento* para prosseguirmos com seu fechamento.";
+                    }
+                }
+
+                case ChatStep.FINISHED: {
+                    return "Seu atendimento já foi encaminhado para um de nossos especialistas. Se precisar de mais alguma coisa, estou à disposição!";
+                }
+
+                default:
+                    return "Desculpe, me perdi um pouco. Pode repetir?";
             }
         } catch (error) {
             console.error('❌ Erro no ChatService:', error);
             return "Erro interno ao processar mensagem.";
         }
-
-        return finalResponseText || "Não entendi, pode repetir?";
     }
 
     async createLead(userId: string, origem: string = 'web'): Promise<string> {
@@ -127,73 +263,17 @@ export class ChatService {
 
     private async updateLead(leadId: string, dados: any) {
         try {
-            // Converter idadesDependentes para JSON se necessário ou manter array
-            // O prisma schema espera Json? Sim.
-
-            // Remover 'finalizado' e limpeza básica
-            // Remover 'finalizado'
-            const { finalizado, valorPlano, ...dadosUt } = dados;
-
-            const dataToUpdate: any = {
-                ...dadosUt
-            };
-
-            // Tratamento especial para valorPlano (String -> Float)
-            if (valorPlano) {
-                if (typeof valorPlano === 'string') {
-                    // Remove R$, espaços e troca vírgula por ponto
-                    const cleanValue = valorPlano.replace(/[R$\s]/g, '').replace(',', '.');
-                    const parsed = parseFloat(cleanValue);
-                    if (!isNaN(parsed)) {
-                        dataToUpdate.valorPlano = parsed;
-                        dataToUpdate.valorEstimado = parsed; // Manter compatibilidade
-                    }
-                } else if (typeof valorPlano === 'number') {
-                    dataToUpdate.valorPlano = valorPlano;
-                    dataToUpdate.valorEstimado = valorPlano;
-                }
-            }
-
-            if (dadosUt.percentualConclusao) {
-                dataToUpdate.percentualConclusao = dadosUt.percentualConclusao;
-            }
-
-            // Persistir novos campos
-            if (dadosUt.jaPossuiPlano !== undefined) dataToUpdate.jaPossuiPlano = dadosUt.jaPossuiPlano;
-            if (dadosUt.planoDesejado) dataToUpdate.planoDesejado = dadosUt.planoDesejado;
-            if (dadosUt.dependentes !== undefined) dataToUpdate.dependentes = dadosUt.dependentes;
-            if (dadosUt.idadesDependentes) dataToUpdate.idadesDependentes = dadosUt.idadesDependentes;
-
-
-            console.log('📝 Persistindo dados no banco:', dataToUpdate);
-
             await prisma.lead.update({
                 where: { id: leadId },
-                data: dataToUpdate
+                data: dados
             });
-
-            // Lógica de Status (Novo -> Morno -> Quente/Negociação)
-            if (finalizado) {
-                const novoStatus = dados.interesseEmFechar ? 'negociacao' : 'morno';
-
-                console.log(`🔥 Atualizando status do Lead ${leadId} para: ${novoStatus}`);
-
-                await prisma.lead.update({
-                    where: { id: leadId },
-                    data: {
-                        status: novoStatus,
-                        percentualConclusao: 100
-                    }
-                });
-            }
         } catch (error) {
             console.error('Erro ao atualizar lead:', error);
         }
     }
 
     private async saveInteraction(leadId: string, role: 'user' | 'assistant', content: string) {
-        // Implementar se tiver tabela de interação acessível
-        // await prisma.interacao.create(...)
+        // Log ou persistência de mensagens
     }
 }
 
