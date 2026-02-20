@@ -147,16 +147,22 @@ class WhatsAppService {
 
         console.log('DEBUG: handleMessage chamado', JSON.stringify(message.key)); // DEBUG
 
-        const messageText = message.message.conversation ||
-            message.message.extendedTextMessage?.text || '';
+        const messageText = message.message?.conversation ||
+            message.message?.extendedTextMessage?.text ||
+            message.message?.imageMessage?.caption ||
+            message.message?.videoMessage?.caption || '';
 
-        console.log(`DEBUG: Processando mensagem de ${remoteJid}: ${messageText}`); // DEBUG
+        console.log(`\n📩 [WA v3.0] Mensagem recebida de ${remoteJid}`);
+        console.log(`   Texto original: "${messageText}"`);
 
-        // ===== RESTRIÇÃO: APENAS NÚMERO +55 11 91577-0166 =====
-        // ===== RESTRIÇÃO REMOVIDA: QUALQUER NÚMERO PODE INTERAGIR =====
-        console.log(`\n📩 Mensagem recebida:`);
-        console.log(`   De: ${remoteJid}`);
-        console.log(`   Texto: "${messageText}"\n`);
+        // Normalização agressiva para comparação
+        const normalizar = (t: string) => t.trim().toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
+            .replace(/[^\w\s]/g, '') // Remove pontuação
+            .replace(/\s+/g, ' '); // Espaços duplos
+
+        const msgLimpa = normalizar(messageText);
+        console.log(`   Texto normalizado: "${msgLimpa}"`);
 
         // Buscar ou criar estado da conversa
         let conversation = conversations.get(remoteJid);
@@ -180,18 +186,18 @@ class WhatsAppService {
                 conversations.set(remoteJid, conversation);
 
             } else {
-                // SE NÃO TEM LEAD ATIVO, EXIGE FRASE DE INÍCIO
-                // SE NÃO TEM LEAD ATIVO, EXIGE FRASE DE INÍCIO
                 const gatilhos = [
-                    'oi, quero um plano de saúde',
-                    'olá! gostaria de uma cotação do prevent senior.' // Nova frase
+                    'oi quero um plano de saude',
+                    'ola gostaria de uma cotacao do prevent senior',
+                    'quero um plano de saude',
+                    'cotacao prevent senior'
                 ];
 
-                const msgLimpa = messageText.trim().toLowerCase();
-                const ehGatilho = gatilhos.some(g => msgLimpa.includes(g) || msgLimpa === g);
+                const ehGatilho = gatilhos.some(g => msgLimpa.includes(g));
+                console.log(`   [WA v3.0] Verificação de Gatilho: ${ehGatilho ? '✅ SIM' : '❌ NÃO'}`);
 
                 if (ehGatilho) {
-                    // ... (Lógica de start abaixo)
+                    console.log(`   [WA v3.0] 🚀 Gatilho detectado! Iniciando novo lead.`);
                 }
 
                 // Check msg recusas
