@@ -279,7 +279,7 @@ export class ChatService {
     }
 
     async createLead(userId: string, origem: string = 'web'): Promise<string> {
-        console.log(`[ChatService] 🆕 Criando novo lead para userId: ${userId}, origem: ${origem}`);
+        console.log(`[ChatService v3.0] 🆕 Criando novo lead para userId: ${userId}, origem: ${origem}`);
         try {
             const lead = await prisma.lead.create({
                 data: {
@@ -290,10 +290,10 @@ export class ChatService {
                     status: 'novo'
                 }
             });
-            console.log(`[ChatService] ✅ Lead criado com ID: ${lead.id}`);
+            console.log(`[ChatService v3.0] ✅ Lead criado com ID: ${lead.id}`);
             return lead.id;
         } catch (error) {
-            console.error('[ChatService] ❌ Erro ao criar lead no banco:', error);
+            console.error('[ChatService v3.0] ❌ Erro ao criar lead no banco:', error);
             throw error;
         }
     }
@@ -311,21 +311,21 @@ export class ChatService {
                 return intro + "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
             }
         } catch (error) {
-            console.error('[ChatService] Erro ao gerar mensagem final:', error);
+            console.error('[ChatService v3.0] Erro ao gerar mensagem final:', error);
             return "Obrigado! Em breve nosso especialista entrará em contato.";
         }
     }
 
     private async updateLead(leadId: string, dados: any) {
         try {
-            console.log(`[ChatService] Atualizando lead ${leadId} com dados:`, JSON.stringify(dados));
+            console.log(`[ChatService v3.0] Atualizando lead ${leadId} com dados:`, JSON.stringify(dados));
             await prisma.lead.update({
                 where: { id: leadId },
                 data: dados
             });
-            console.log(`[ChatService] Lead ${leadId} atualizado com sucesso!`);
+            console.log(`[ChatService v3.0] Lead ${leadId} atualizado com sucesso!`);
         } catch (error) {
-            console.error(`[ChatService] ❌ Erro ao atualizar lead ${leadId}:`, error);
+            console.error(`[ChatService v3.0] ❌ Erro ao atualizar lead ${leadId}:`, error);
         }
     }
 
@@ -339,7 +339,7 @@ export class ChatService {
                 }
             });
         } catch (error) {
-            console.error('[ChatService] Erro ao salvar interação:', error);
+            console.error('[ChatService v3.0] Erro ao salvar interação:', error);
         }
     }
 }
