@@ -90,16 +90,8 @@ export class ChatService {
                     session.collectedData.nome = messageText;
                     await this.updateLead(leadId, { nome: messageText });
 
-                    // Se for lead do site (telefone placeholder), pede o telefone.
-                    // Se for WhatsApp ou já tiver telefone real, pula.
-                    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-                    if (lead?.origem === 'whatsapp' || (lead?.telefone && !lead.telefone.startsWith('web-'))) {
-                        session.step = ChatStep.AWAITING_CURRENT_PLAN;
-                        return "Prazer em conhecer você! 😊\n\nVocê já possui algum plano de saúde atualmente? Se sim, qual?";
-                    }
-
-                    session.step = ChatStep.AWAITING_PHONE;
-                    return "Prazer em conhecer você! 😊\n\nQual o seu **WhatsApp com DDD** para que eu possa te enviar a cotação depois?";
+                    session.step = ChatStep.AWAITING_CURRENT_PLAN;
+                    return "Prazer em conhecer você! 😊\n\nVocê já possui algum plano de saúde atualmente? Se sim, qual?";
                 }
 
                 case ChatStep.AWAITING_PHONE: {
@@ -111,8 +103,16 @@ export class ChatService {
 
                     await this.updateLead(leadId, { telefone: phone });
 
-                    session.step = ChatStep.AWAITING_CURRENT_PLAN;
-                    return "Perfeito! Já guardei seu contato.\n\nVocê já possui algum plano de saúde atualmente? Se sim, qual?";
+                    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+                    const isSite = lead?.origem !== 'whatsapp';
+
+                    session.step = ChatStep.FINISHED;
+
+                    if (isSite) {
+                        return "Perfeito! Já guardei seu contato.\n\nFique tranquilo, nosso especialista vai entrar em contato com você pelo WhatsApp em breve para finalizarmos tudo! 🚀💙";
+                    } else {
+                        return "Perfeito! Já guardei seu contato.\n\nPara finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve.";
+                    }
                 }
 
                 case ChatStep.AWAITING_CURRENT_PLAN: {
@@ -226,30 +226,52 @@ export class ChatService {
                         const valor = quotes.enfermaria.total;
                         session.collectedData.planoDesejado = "Enfermaria";
                         session.collectedData.valorPlano = valor;
-                        session.step = ChatStep.FINISHED;
+
+                        // Atualizar dados básicos
                         await this.updateLead(leadId, {
                             planoDesejado: "Enfermaria",
                             valorPlano: valor,
                             valorEstimado: valor,
                             status: 'negociacao',
-                            percentualConclusao: 100
+                            percentualConclusao: 90 // Quase lá
                         });
-                        return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\n" +
-                            "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+
+                        // Verificar se precisa de telefone (apenas se for site e ainda for placeholder)
+                        const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+                        const needsPhone = lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-');
+
+                        if (needsPhone) {
+                            session.step = ChatStep.AWAITING_PHONE;
+                            return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\nPara finalizarmos, qual o seu **WhatsApp com DDD** para nosso especialista entrar em contato?";
+                        } else {
+                            session.step = ChatStep.FINISHED;
+                            return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\n" +
+                                "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+                        }
                     } else if (choice.includes('apartamento')) {
                         const valor = quotes.apartamento.total;
                         session.collectedData.planoDesejado = "Apartamento";
                         session.collectedData.valorPlano = valor;
-                        session.step = ChatStep.FINISHED;
+
                         await this.updateLead(leadId, {
                             planoDesejado: "Apartamento",
                             valorPlano: valor,
                             valorEstimado: valor,
                             status: 'negociacao',
-                            percentualConclusao: 100
+                            percentualConclusao: 90
                         });
-                        return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\n" +
-                            "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+
+                        const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+                        const needsPhone = lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-');
+
+                        if (needsPhone) {
+                            session.step = ChatStep.AWAITING_PHONE;
+                            return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\nPara finalizarmos, qual o seu **WhatsApp com DDD** para nosso especialista entrar em contato?";
+                        } else {
+                            session.step = ChatStep.FINISHED;
+                            return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\n" +
+                                "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
+                        }
                     } else {
                         return "Por favor, digite *Enfermaria* ou *Apartamento* para prosseguirmos com seu fechamento.";
                     }
@@ -269,26 +291,35 @@ export class ChatService {
     }
 
     async createLead(userId: string, origem: string = 'web'): Promise<string> {
-        const lead = await prisma.lead.create({
-            data: {
-                userId,
-                origem,
-                telefone: 'web-' + Date.now(), // Placeholder
-                nome: 'Visitante Site',
-                status: 'novo'
-            }
-        });
-        return lead.id;
+        console.log(`[ChatService] 🆕 Criando novo lead para userId: ${userId}, origem: ${origem}`);
+        try {
+            const lead = await prisma.lead.create({
+                data: {
+                    userId,
+                    origem,
+                    telefone: 'web-' + Date.now(), // Placeholder
+                    nome: 'Visitante Site',
+                    status: 'novo'
+                }
+            });
+            console.log(`[ChatService] ✅ Lead criado com ID: ${lead.id}`);
+            return lead.id;
+        } catch (error) {
+            console.error('[ChatService] ❌ Erro ao criar lead no banco:', error);
+            throw error;
+        }
     }
 
     private async updateLead(leadId: string, dados: any) {
         try {
+            console.log(`[ChatService] Atualizando lead ${leadId} com dados:`, JSON.stringify(dados));
             await prisma.lead.update({
                 where: { id: leadId },
                 data: dados
             });
+            console.log(`[ChatService] Lead ${leadId} atualizado com sucesso!`);
         } catch (error) {
-            console.error('Erro ao atualizar lead:', error);
+            console.error(`[ChatService] ❌ Erro ao atualizar lead ${leadId}:`, error);
         }
     }
 
