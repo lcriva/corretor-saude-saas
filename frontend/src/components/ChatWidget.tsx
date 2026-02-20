@@ -47,7 +47,9 @@ export function ChatWidget() {
         if (isOpen) {
             initChat();
             trackPixelEvent('Contact', { type: 'ChatOpened' });
-            if (messages.length === 0 && !leadId) {
+            // Se abrir o chat e não tiver mensagens, força o início para pegar a saudação da MarIA
+            // Independente de já ter um leadId no localStorage
+            if (messages.length === 0) {
                 startSession();
             }
         }

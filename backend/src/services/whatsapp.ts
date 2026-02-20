@@ -6,13 +6,11 @@ import makeWASocket, {
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import { PrismaClient } from '@prisma/client';
-import { processarMensagemIA } from '../lib/openai';
-import OpenAI from 'openai';
+import { chatService } from './chatService';
 
 const prisma = new PrismaClient();
 
 interface ConversationState {
-    history: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
     userId?: string;
     leadId?: string; // ID do lead no banco
     lastInteraction: number;
@@ -176,9 +174,6 @@ class WhatsAppService {
                 const leadDados = await prisma.lead.findUnique({ where: { id: leadAtivoId } });
 
                 conversation = {
-                    history: [
-                        { role: 'system', content: `Sistema: O usuário está retomando uma conversa anterior. Lead ID: ${leadAtivoId}. Dados atuais: ${JSON.stringify(leadDados)}` }
-                    ],
                     userId,
                     leadId: leadAtivoId,
                     lastInteraction: Date.now(),
@@ -231,9 +226,9 @@ class WhatsAppService {
 
                 // INÍCIO DA CONVERSA (CRIAR NOVO)
                 const leadId = await this.getOrCreateLead(remoteJid, userId);
+                if (!leadId) return;
 
                 conversation = {
-                    history: [],
                     userId,
                     leadId,
                     lastInteraction: Date.now(),
@@ -241,18 +236,21 @@ class WhatsAppService {
                 };
                 conversations.set(remoteJid, conversation);
 
-                // Iniciar com mensagem introdutória da IA
-                await this.processarResposta(remoteJid, messageText, conversation);
+                // Iniciar com mensagem introdutória da State Machine (MarIA)
+                // Passamos string vazia para forçar o estado START
+                await this.processarResposta(remoteJid, "", conversation);
                 return;
             }
         }
 
-        // Atualizar timestamp da última interação
-        conversation.lastInteraction = Date.now();
-        conversation.reminded = false; // Resetar flag se usuário respondeu
+        if (conversation) {
+            // Atualizar timestamp da última interação
+            conversation.lastInteraction = Date.now();
+            conversation.reminded = false; // Resetar flag se usuário respondeu
 
-        // Processar resposta
-        await this.processarResposta(remoteJid, messageText, conversation);
+            // Processar resposta
+            await this.processarResposta(remoteJid, messageText, conversation);
+        }
     }
 
     private async findActiveLeadId(remoteJid: string): Promise<string | null> {
@@ -277,121 +275,23 @@ class WhatsAppService {
         textoUsuario: string,
         conversation: ConversationState
     ) {
-        // 1. Adicionar mensagem do usuário ao histórico (se não for null/vazia)
-        if (textoUsuario) {
-            conversation.history.push({ role: 'user', content: textoUsuario });
-        }
-
-        let loopCount = 0;
-        const MAX_LOOPS = 5;
-        let respondeu = false;
+        if (!conversation.leadId) return;
 
         try {
-            while (loopCount < MAX_LOOPS) {
-                loopCount++;
-                console.log(`🔄 Loop IA ${loopCount}/${MAX_LOOPS}`);
+            await this.sock.sendPresenceUpdate('composing', remoteJid);
 
-                // 2. Chamar a IA com Timeout
-                console.log('⏳ Chamando OpenAI...');
+            // Usar Máquina de Estados (ChatService) em vez da OpenAI diretamente
+            const responseText = await chatService.processUserMessage(conversation.leadId, textoUsuario);
 
-                // UX: Mostrar "digitando..."
-                await this.sock.sendPresenceUpdate('composing', remoteJid);
+            await this.enviarMensagem(remoteJid, responseText);
 
-                // Timeout de 15 segundos para a OpenAI
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('TIMEOUT_OPENAI')), 15000)
-                );
+            // Se a conversa terminou no ChatService, podemos limpar aqui também se desejar
+            // Mas o ChatService já gerencia o estado FINISHED
 
-                let respostaIA;
-                try {
-                    respostaIA = await Promise.race([
-                        processarMensagemIA(conversation.history),
-                        timeoutPromise
-                    ]) as any;
-                } catch (timeoutErr: any) {
-                    if (timeoutErr.message === 'TIMEOUT_OPENAI') {
-                        console.error('⏱️ OpenAI demorou demais e deu timeout.');
-                        await this.enviarMensagem(remoteJid, "Estou demorando um pouco para pensar... Tente mandar a mensagem novamente?");
-                        return;
-                    }
-                    throw timeoutErr;
-                }
-
-                console.log('🔙 Retorno OpenAI:', respostaIA.tipo);
-
-                // Adicionar a resposta da IA ao histórico
-                if (respostaIA.msg) {
-                    conversation.history.push(respostaIA.msg);
-                }
-
-                if (respostaIA.tipo === 'RESPOSTA' && respostaIA.texto) {
-                    // IA respondeu com texto FINAL
-                    console.log('📤 Enviando resposta texto:', respostaIA.texto);
-                    await this.enviarMensagem(remoteJid, respostaIA.texto);
-                    conversations.set(remoteJid, conversation);
-                    respondeu = true;
-                    return; // Sai do loop e da função
-
-                } else if (respostaIA.tipo === 'ATUALIZAR' && respostaIA.dados) {
-                    // IA solicitou tool call (atualizar dados)
-                    console.log('🤖 IA atualizando dados do lead:', respostaIA.dados);
-
-                    // Atualizar lead no banco
-                    if (conversation.leadId) {
-                        try {
-                            await this.atualizarLead(conversation.leadId, respostaIA.dados);
-                        } catch (err) {
-                            console.error('❌ Erro ao atualizar lead:', err);
-                            // Não para o fluxo, tenta continuar
-                        }
-                    }
-
-                    if (respostaIA.dados.finalizado) {
-                        // Se finalizou, manda mensagem final e encerra
-                        console.log('🏁 Finalizando conversa...');
-                        if (conversation.leadId) {
-                            await this.enviarPropostaFinal(remoteJid, conversation.leadId, respostaIA.dados);
-                        }
-                        conversations.delete(remoteJid);
-                        respondeu = true;
-                        return; // Sai do loop
-                    }
-
-                    // IA chamou ferramentas (pode ser mais de uma), precisamos devolver o output para TODAS
-                    if (respostaIA.msg && respostaIA.msg.tool_calls) {
-                        for (const toolCall of respostaIA.msg.tool_calls) {
-                            console.log(`🔧 Devolvendo output da tool ${toolCall.id} para IA...`);
-                            conversation.history.push({
-                                role: 'tool',
-                                tool_call_id: toolCall.id,
-                                content: JSON.stringify({ success: true, message: "Dados processados com sucesso." })
-                            });
-                        }
-                        // Loop continua para a próxima iteração
-                        continue;
-                    } else {
-                        console.log('⚠️ Alerta: Tool call sem IDs na mensagem original!');
-                    }
-                } else if (respostaIA.tipo === 'ERRO') {
-                    console.log('❌ Erro retornado pela IA');
-                    await this.enviarMensagem(remoteJid, respostaIA.texto || "Erro na IA, tente novamente.");
-                    respondeu = true;
-                    return;
-                }
-
-                // Se chegou aqui e não retornou nem continue, algo estranho
-                console.log('⚠️ Loop caiu sem ação definida.');
-                break;
-            }
-
-            if (!respondeu) {
-                console.log('⚠️ Loop terminou sem resposta ao usuário via texto.');
-                await this.enviarMensagem(remoteJid, "Desculpe, me confundi um pouco. Pode repetir o que disse?");
-            }
-
+            console.log(`📤 Resposta enviada via State Machine para ${remoteJid}`);
         } catch (error) {
-            console.error('❌ Erro na conversa com IA:', error);
-            await this.enviarMensagem(remoteJid, "Tive um problema técnico. Vamos tentar de novo?");
+            console.error('❌ Erro ao processar resposta via State Machine:', error);
+            await this.enviarMensagem(remoteJid, "Desculpe, tive um problema técnico ao processar sua mensagem. Vamos tentar de novo?");
         }
     }
 
@@ -446,133 +346,6 @@ class WhatsAppService {
             console.error('❌ Erro ao buscar/criar lead:', error);
             return undefined;
         }
-    }
-
-    private async atualizarLead(leadId: string, dados: any) {
-        try {
-            // Buscar dados atuais para mesclar
-            const leadAtual = await prisma.lead.findUnique({ where: { id: leadId } });
-
-            // Dados mesclados (Atuais + Novos)
-            const dadosFinais = { ...leadAtual, ...dados };
-
-            // Calcular percentual baseado no acumulado
-            let preenchidos = 0;
-            const totais = 4; // Nome, Idade, Cidade, Email
-
-            if (dadosFinais.nome) preenchidos++;
-            if (dadosFinais.idade) preenchidos++;
-            if (dadosFinais.cidade) preenchidos++;
-            if (dadosFinais.email) preenchidos++;
-
-            const percentual = Math.round((preenchidos / totais) * 100);
-
-            // Parser de valor mais robusto (Remove tudo que não é número, exceto vírgula e ponto)
-            // Ex: "R$ 1.200,50" -> "1200.50"
-            let valorPlanoParsed = dados.valorPlano;
-            if (typeof dados.valorPlano === 'string') {
-                // Remove R$, espaços e caracteres estranhos, mantém números, ponto e vírgula
-                let limpo = dados.valorPlano.replace(/[^0-9.,]/g, '');
-                // Se tiver vírgula, assume formato BR (remove pontos de milhar primeiro)
-                if (limpo.includes(',')) {
-                    limpo = limpo.replace(/\./g, '').replace(',', '.');
-                }
-                valorPlanoParsed = parseFloat(limpo);
-            }
-
-            // Atualizar
-            await prisma.lead.update({
-                where: { id: leadId },
-                data: {
-                    nome: dados.nome,
-                    idade: dados.idade,
-                    cidade: dados.cidade,
-                    estado: dados.estado,
-                    dependentes: dados.dependentes,
-
-                    valorPlano: valorPlanoParsed,
-                    planoDesejado: dados.planoDesejado,
-
-                    email: dados.email,
-                    percentualConclusao: Math.max(10, percentual),
-                    idadesDependentes: dados.idadesDependentes || undefined, // Salvar array de idades
-                    scoreIA: this.calcularScoreSimples(dados.idade || 0, dados.dependentes || 0),
-                    jaPossuiPlano: dados.jaPossuiPlano
-                } as any
-            });
-            console.log(`💾 Lead ${leadId} atualizado! (${percentual}% concluído)`);
-
-        } catch (error) {
-            console.error('❌ Erro ao atualizar lead:', error);
-        }
-    }
-
-    private async enviarPropostaFinal(remoteJid: string, leadId: string, dados: any) {
-        // Se demonstrou interesse em fechar, vira Lead Quente (negociacao)
-        // Se não, fica como Lead Morno (novo + 100%)
-        const novoStatus = dados.interesseEmFechar ? 'negociacao' : 'novo';
-
-        // Atualizar status para finalizado
-        await prisma.lead.update({
-            where: { id: leadId },
-            data: {
-                status: novoStatus,
-                percentualConclusao: 100,
-                jaPossuiPlano: dados.jaPossuiPlano // Persistir a informação se já possui plano
-            }
-        });
-
-        // A IA já deve ter apresentado os valores e solicitado os docs.
-        // Apenas reforçamos o contato do especialista e encerramos tecnicamente.
-
-        let mensagemFinal = `✅ *Tudo certo!* Já registrei seu interesse.\n\n`;
-        mensagemFinal += `Como solicitado, por favor *envie aqui no WhatsApp foto dos seguintes documentos* para adiantarmos:\n`;
-        mensagemFinal += `- RG ou CNH\n`;
-        mensagemFinal += `- Comprovante de Residência\n`;
-        mensagemFinal += `- Cartão do SUS\n\n`;
-        mensagemFinal += `👨‍💼 *Nosso especialista vai te chamar em breve* para confirmar os dados e finalizar a proposta.\n`;
-        mensagemFinal += `Obrigado pela preferência!`;
-
-        await this.enviarMensagem(remoteJid, mensagemFinal);
-        console.log(`✅ Conversa finalizada e lead salvo!`);
-    }
-
-    private gerarPropostas(idade: number, dependentes: number, faixaPreco: number) {
-        const totalVidas = 1 + dependentes;
-        const basePreco = faixaPreco / totalVidas;
-
-        return [
-            {
-                operadora: 'Bradesco Saúde',
-                plano: 'TOP Nacional',
-                valor: basePreco * totalVidas * 1.2,
-                destaque: 'Cobertura nacional completa'
-            },
-            {
-                operadora: 'Amil',
-                plano: 'One S750',
-                valor: basePreco * totalVidas * 1.1,
-                destaque: 'Melhor custo-benefício'
-            },
-            {
-                operadora: 'SulAmérica',
-                plano: 'Clássico',
-                valor: basePreco * totalVidas * 1.15,
-                destaque: 'Reembolso até 90%'
-            }
-        ];
-    }
-
-    private calcularScoreSimples(idade: number, dependentes: number): number {
-        let score = 50;
-
-        if (idade >= 30 && idade <= 50) score += 20;
-        else if (idade < 30) score += 10;
-
-        if (dependentes > 0) score += 15;
-        if (dependentes >= 2) score += 10;
-
-        return Math.min(score, 100);
     }
 
     async enviarMensagem(numero: string, mensagem: string) {
