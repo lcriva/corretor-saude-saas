@@ -57,6 +57,7 @@ export class ChatService {
                 }
             };
             sessions.set(leadId, session);
+            console.log(`[ChatService v2.1] 🚀 Sessão iniciada para lead ${leadId}`);
         }
         return session;
     }
@@ -332,7 +333,17 @@ export class ChatService {
     }
 
     private async saveInteraction(leadId: string, role: 'user' | 'assistant', content: string) {
-        // Log ou persistência de mensagens
+        try {
+            await prisma.interacao.create({
+                data: {
+                    leadId,
+                    tipo: role === 'user' ? 'mensagem_usuario' : 'mensagem_marIA',
+                    descricao: content.substring(0, 500) // Limitar tamanho
+                }
+            });
+        } catch (error) {
+            console.error('[ChatService] Erro ao salvar interação:', error);
+        }
     }
 }
 

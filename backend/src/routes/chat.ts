@@ -29,10 +29,14 @@ router.post('/start', async (req, res) => {
     try {
         const brokerId = await getDefaultBrokerId();
         if (!brokerId) {
+            console.error('[Chat Route] ❌ Nenhum corretor encontrado para atribuir o lead!');
             return res.status(500).json({ error: 'Nenhum corretor configurado no sistema.' });
         }
 
+        console.log(`[Chat Route] 🆕 Iniciando chat. Atribuindo ao Broker: ${brokerId}`);
         const leadId = await chatService.createLead(brokerId, 'site_chat');
+        console.log(`[Chat Route] ✅ Lead ${leadId} criado com origem 'site_chat'`);
+
         const initialMessage = await chatService.processUserMessage(leadId, "");
         res.json({ leadId, message: initialMessage });
     } catch (error) {

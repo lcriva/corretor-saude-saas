@@ -69,6 +69,7 @@ export function ChatWidget() {
             const data = res.data;
 
             if (data.leadId) {
+                console.log('🚀 [Chat] Sessão iniciada. LeadId:', data.leadId);
                 setLeadId(data.leadId);
                 localStorage.setItem('chat_lead_id', data.leadId);
                 setMessages([{ role: 'assistant', content: data.message }]);
