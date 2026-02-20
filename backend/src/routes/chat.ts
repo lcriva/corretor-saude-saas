@@ -29,19 +29,22 @@ router.post('/start', async (req, res) => {
     try {
         const brokerId = await getDefaultBrokerId();
         if (!brokerId) {
-            console.error('[Chat Route] ❌ Nenhum corretor encontrado para atribuir o lead!');
+            console.error('[Chat Route v2.2] ❌ NENHUM CORRETOR ENCONTRADO! Verifique se há usuários no banco.');
             return res.status(500).json({ error: 'Nenhum corretor configurado no sistema.' });
         }
 
-        console.log(`[Chat Route] 🆕 Iniciando chat. Atribuindo ao Broker: ${brokerId}`);
+        console.log(`[Chat Route v2.2] 🆕 Iniciando chat para Broker: ${brokerId}`);
         const leadId = await chatService.createLead(brokerId, 'site_chat');
-        console.log(`[Chat Route] ✅ Lead ${leadId} criado com origem 'site_chat'`);
+        console.log(`[Chat Route v2.2] ✅ Lead ${leadId} criado com SUCESSO`);
 
+        console.log(`[Chat Route v2.2] 🤖 Gerando saudação inicial...`);
         const initialMessage = await chatService.processUserMessage(leadId, "");
+        console.log(`[Chat Route v2.2] 🛡️ Saudação gerada: "${initialMessage.substring(0, 30)}..."`);
+
         res.json({ leadId, message: initialMessage });
-    } catch (error) {
-        console.error('Erro ao iniciar chat:', error);
-        res.status(500).json({ error: 'Erro interno' });
+    } catch (error: any) {
+        console.error('[Chat Route v2.2] ❌ ERRO CRÍTICO ao iniciar chat:', error);
+        res.status(500).json({ error: 'Erro interno', details: error.message });
     }
 });
 

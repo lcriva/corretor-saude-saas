@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { processarMensagemIA } from '../lib/openai';
-import OpenAI from 'openai';
 import { pricingService } from './pricingService';
+import OpenAI from 'openai';
 
 const prisma = new PrismaClient();
 
@@ -57,7 +56,7 @@ export class ChatService {
                 }
             };
             sessions.set(leadId, session);
-            console.log(`[ChatService v2.1] 🚀 Sessão iniciada para lead ${leadId}`);
+            console.log(`[ChatService v2.2] 🚀 Sessão iniciada para lead ${leadId}`);
         }
         return session;
     }

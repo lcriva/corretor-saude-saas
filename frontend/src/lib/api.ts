@@ -1,11 +1,23 @@
 import axios from 'axios';
 
+let baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Tentativa de detectar URL da API se estiver no browser e a env for localhost ou vazia
+if (typeof window !== 'undefined' && (baseURL.includes('localhost') || !baseURL)) {
+    const hostname = window.location.hostname;
+    // Se estiver em um domínio real, tenta api.dominio
+    if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+        // Ex: preventseniorvendas.com.br -> api.preventseniorvendas.com.br
+        baseURL = `https://api.${hostname}`;
+    }
+}
+
 const api = axios.create({
-    baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api',
+    baseURL: baseURL + '/api',
 });
 
 // Interceptor para adicionar token em todas as requisições
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: any) => {
     if (typeof window !== 'undefined') {
         let token = localStorage.getItem('token');
 
@@ -37,8 +49,8 @@ api.interceptors.request.use((config) => {
 
 // Interceptor para tratar erros
 api.interceptors.response.use(
-    (response) => response,
-    (error) => {
+    (response: any) => response,
+    (error: any) => {
         if (error.response?.status === 401) {
             if (typeof window !== 'undefined') {
                 console.error('🚨 API 401 Unauthorized - Redirecting to login');
