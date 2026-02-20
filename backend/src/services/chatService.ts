@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 export enum ChatStep {
     START = 'START',
     AWAITING_NAME = 'AWAITING_NAME',
+    AWAITING_PHONE = 'AWAITING_PHONE',
     AWAITING_CURRENT_PLAN = 'AWAITING_CURRENT_PLAN',
     AWAITING_DEPENDENT_CHOICE = 'AWAITING_DEPENDENT_CHOICE',
     AWAITING_DEPENDENT_COUNT = 'AWAITING_DEPENDENT_COUNT',
@@ -89,10 +90,29 @@ export class ChatService {
                     session.collectedData.nome = messageText;
                     await this.updateLead(leadId, { nome: messageText });
 
+                    // Se for lead do site (telefone placeholder), pede o telefone.
+                    // Se for WhatsApp ou já tiver telefone real, pula.
+                    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+                    if (lead?.origem === 'whatsapp' || (lead?.telefone && !lead.telefone.startsWith('web-'))) {
+                        session.step = ChatStep.AWAITING_CURRENT_PLAN;
+                        return "Prazer em conhecer você! 😊\n\nVocê já possui algum plano de saúde atualmente? Se sim, qual?";
+                    }
+
+                    session.step = ChatStep.AWAITING_PHONE;
+                    return "Prazer em conhecer você! 😊\n\nQual o seu **WhatsApp com DDD** para que eu possa te enviar a cotação depois?";
+                }
+
+                case ChatStep.AWAITING_PHONE: {
+                    // Limpar caracteres não numéricos
+                    const phone = messageText.replace(/\D/g, '');
+                    if (phone.length < 10) {
+                        return "Por favor, informe seu WhatsApp com DDD (ex: 11999999999).";
+                    }
+
+                    await this.updateLead(leadId, { telefone: phone });
+
                     session.step = ChatStep.AWAITING_CURRENT_PLAN;
-                    const msg = "Prazer em conhecer você! 😊\n\n" +
-                        "Você já possui algum plano de saúde atualmente? Se sim, qual?";
-                    return msg;
+                    return "Perfeito! Já guardei seu contato.\n\nVocê já possui algum plano de saúde atualmente? Se sim, qual?";
                 }
 
                 case ChatStep.AWAITING_CURRENT_PLAN: {
