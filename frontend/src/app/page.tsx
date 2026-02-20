@@ -4,6 +4,7 @@ import { Phone, CheckCircle, MapPin, Building, ShieldCheck, Mail, Menu, MessageC
 import { ChatWidget } from '@/components/ChatWidget';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { trackPixelEvent } from '@/components/MetaPixel';
 
 export default function PreventLandingPage() {
     // Dados exatos capturados do site
@@ -83,6 +84,7 @@ export default function PreventLandingPage() {
     ];
 
     const sendMessage = () => {
+        trackPixelEvent('Contact', { type: 'WhatsApp Button Click' });
         const msg = "Olá! Gostaria de uma cotação do Prevent Senior.";
         window.open(`https://wa.me/5511967609811?text=${encodeURIComponent(msg)}`, '_blank');
     };

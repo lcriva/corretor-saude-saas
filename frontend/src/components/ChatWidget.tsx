@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
+import { trackPixelEvent } from '@/components/MetaPixel';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -45,6 +46,7 @@ export function ChatWidget() {
     useEffect(() => {
         if (isOpen) {
             initChat();
+            trackPixelEvent('Contact', { type: 'ChatOpened' });
             if (messages.length === 0 && !leadId) {
                 // startSession(); // REMOVED: Lazy init to avoid empty leads
                 setMessages([{ role: 'assistant', content: "Olá! Sou a MarIA, sua assistente virtual. Como posso ajudar você a encontrar o melhor plano da Prevent Senior hoje?" }]);
@@ -81,6 +83,9 @@ export function ChatWidget() {
         if (!input.trim() || isLoading) return;
 
         const userMsg = input.trim();
+        if (messages.length <= 1) { // First user message
+            trackPixelEvent('Lead', { content_name: 'Chat Lead Start' });
+        }
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
         setIsLoading(true);
