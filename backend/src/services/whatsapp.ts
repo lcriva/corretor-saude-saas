@@ -312,8 +312,17 @@ class WhatsAppService {
             }
 
             // Se não, criar novo
-            const primeiroUsuario = await prisma.user.findFirst();
-            if (!primeiroUsuario) {
+            // Tentar atribuir para lcriva@gmail.com primeiro
+            let corretor = await prisma.user.findFirst({
+                where: { email: 'lcriva@gmail.com' }
+            });
+
+            // Fallback para primeiro usuário se o email não existir
+            if (!corretor) {
+                corretor = await prisma.user.findFirst();
+            }
+
+            if (!corretor) {
                 console.error('❌ Erro: Nenhum usuário no sistema para vincular o lead.');
                 return undefined;
             }
@@ -321,7 +330,7 @@ class WhatsAppService {
             const novoLead = await prisma.lead.create({
                 data: {
                     telefone,
-                    userId: primeiroUsuario.id,
+                    userId: corretor.id,
                     status: 'novo',
                     origem: 'whatsapp',
                     percentualConclusao: 10 // Começa com 10% (contato iniciado)

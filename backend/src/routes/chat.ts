@@ -9,6 +9,13 @@ const router = express.Router();
 // Aqui vamos pegar o PRIMEIRO usuário do banco como "Dono" do site.
 // Aqui vamos prioritariamente pegar o usuário 'Thiago' ou o primeiro do banco.
 async function getDefaultBroker() { // Retorna o objeto User completo
+    // 1. Prioridade Máxima: lcriva@gmail.com
+    const primary = await prisma.user.findFirst({
+        where: { email: 'lcriva@gmail.com' }
+    });
+    if (primary) return primary;
+
+    // 2. Fallback: Thiago
     const thiago = await prisma.user.findFirst({
         where: {
             OR: [
@@ -19,6 +26,7 @@ async function getDefaultBroker() { // Retorna o objeto User completo
     });
     if (thiago) return thiago;
 
+    // 3. Último recurso: Primeiro usuário do banco
     const first = await prisma.user.findFirst();
     return first;
 }
