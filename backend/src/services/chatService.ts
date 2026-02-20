@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { pricingService } from './pricingService';
 import OpenAI from 'openai';
-
-const prisma = new PrismaClient();
 
 export enum ChatStep {
     START = 'START',
@@ -56,7 +54,7 @@ export class ChatService {
                 }
             };
             sessions.set(leadId, session);
-            console.log(`[ChatService v2.2] 🚀 Sessão iniciada para lead ${leadId}`);
+            console.log(`[ChatService v3.0] 🚀 Sessão iniciada para lead ${leadId}`);
         }
         return session;
     }

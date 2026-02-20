@@ -5,10 +5,8 @@ import makeWASocket, {
 
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { chatService } from './chatService';
-
-const prisma = new PrismaClient();
 
 interface ConversationState {
     userId?: string;

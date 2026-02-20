@@ -1,49 +1,46 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { chatService } from '../services/chatService';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Middleware simples para garantir que temos um Broker para atribuir o lead
 // Em produção, isso viria do domínio ou de um token público.
 // Aqui vamos pegar o PRIMEIRO usuário do banco como "Dono" do site.
 // Aqui vamos prioritariamente pegar o usuário 'Thiago' ou o primeiro do banco.
-async function getDefaultBrokerId() {
+async function getDefaultBroker() { // Retorna o objeto User completo
     const thiago = await prisma.user.findFirst({
         where: {
             OR: [
-                { email: { contains: 'thiago' } },
-                { nome: { contains: 'Thiago' } }
+                { email: { contains: 'thiago', mode: 'insensitive' } },
+                { nome: { contains: 'Thiago', mode: 'insensitive' } }
             ]
         }
     });
-    if (thiago) return thiago.id;
+    if (thiago) return thiago;
 
     const first = await prisma.user.findFirst();
-    return first?.id;
+    return first;
 }
 
 // Iniciar conversa
 router.post('/start', async (req, res) => {
     try {
-        const brokerId = await getDefaultBrokerId();
-        if (!brokerId) {
-            console.error('[Chat Route v2.2] ❌ NENHUM CORRETOR ENCONTRADO! Verifique se há usuários no banco.');
+        const broker = await getDefaultBroker();
+        if (!broker) {
+            console.error('[Chat Route v3.0] ❌ NENHUM CORRETOR ENCONTRADO!');
             return res.status(500).json({ error: 'Nenhum corretor configurado no sistema.' });
         }
 
-        console.log(`[Chat Route v2.2] 🆕 Iniciando chat para Broker: ${brokerId}`);
-        const leadId = await chatService.createLead(brokerId, 'site_chat');
-        console.log(`[Chat Route v2.2] ✅ Lead ${leadId} criado com SUCESSO`);
+        console.log(`[Chat Route v3.0] 🆕 Iniciando chat para Broker: ${broker.nome} (${broker.email}) - ID: ${broker.id}`);
+        const leadId = await chatService.createLead(broker.id, 'site_chat');
+        console.log(`[Chat Route v3.0] ✅ Lead ${leadId} criado e ATRIBUÍDO a ${broker.nome}`);
 
-        console.log(`[Chat Route v2.2] 🤖 Gerando saudação inicial...`);
+        console.log(`[Chat Route v3.0] 🤖 Gerando saudação...`);
         const initialMessage = await chatService.processUserMessage(leadId, "");
-        console.log(`[Chat Route v2.2] 🛡️ Saudação gerada: "${initialMessage.substring(0, 30)}..."`);
-
         res.json({ leadId, message: initialMessage });
     } catch (error: any) {
-        console.error('[Chat Route v2.2] ❌ ERRO CRÍTICO ao iniciar chat:', error);
+        console.error('[Chat Route v3.0] ❌ ERRO CRÍTICO no start:', error);
         res.status(500).json({ error: 'Erro interno', details: error.message });
     }
 });
