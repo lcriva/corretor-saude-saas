@@ -254,16 +254,27 @@ export class ChatService {
                 const ages = [session.collectedData.titularAge!, ...session.collectedData.dependentAges];
                 const quotes = pricingService.buildQuote(ages);
 
-                if (text.includes('enfermaria')) {
-                    session.collectedData.planoDesejado = 'Enfermaria';
-                    session.collectedData.valorPlano = quotes.enfermaria.total;
-                    await this.updateLead(session.leadId, { planoDesejado: 'Enfermaria', valorPlano: quotes.enfermaria.total, valorEstimado: quotes.enfermaria.total, status: 'negociacao', percentualConclusao: 80 });
-                } else if (text.includes('apartamento')) {
-                    session.collectedData.planoDesejado = 'Apartamento';
-                    session.collectedData.valorPlano = quotes.apartamento.total;
-                    await this.updateLead(session.leadId, { planoDesejado: 'Apartamento', valorPlano: quotes.apartamento.total, valorEstimado: quotes.apartamento.total, status: 'negociacao', percentualConclusao: 80 });
+                if (text.includes('mais enfermaria') || text.includes('mais_enfermaria')) {
+                    session.collectedData.planoDesejado = 'Prevent MAIS Enfermaria';
+                    session.collectedData.valorPlano = quotes.mais_enfermaria.total;
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent MAIS Enfermaria', valorPlano: quotes.mais_enfermaria.total, valorEstimado: quotes.mais_enfermaria.total, status: 'negociacao', percentualConclusao: 80 });
+                } else if (text.includes('mais apartamento') || text.includes('mais_apartamento')) {
+                    session.collectedData.planoDesejado = 'Prevent MAIS Apartamento';
+                    session.collectedData.valorPlano = quotes.mais_apartamento.total;
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent MAIS Apartamento', valorPlano: quotes.mais_apartamento.total, valorEstimado: quotes.mais_apartamento.total, status: 'negociacao', percentualConclusao: 80 });
+                } else if (text.includes('1025 enfermaria') || text.includes('1025_enfermaria') || text.includes('enfermaria')) {
+                    session.collectedData.planoDesejado = 'Prevent Senior 1025 Enfermaria';
+                    session.collectedData.valorPlano = quotes.ps1025_enfermaria.total;
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Enfermaria', valorPlano: quotes.ps1025_enfermaria.total, valorEstimado: quotes.ps1025_enfermaria.total, status: 'negociacao', percentualConclusao: 80 });
+                } else if (text.includes('1025 apartamento') || text.includes('1025_apartamento') || text.includes('apartamento')) {
+                    session.collectedData.planoDesejado = 'Prevent Senior 1025 Apartamento';
+                    session.collectedData.valorPlano = quotes.ps1025_apartamento.total;
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Apartamento', valorPlano: quotes.ps1025_apartamento.total, valorEstimado: quotes.ps1025_apartamento.total, status: 'negociacao', percentualConclusao: 80 });
                 } else {
-                    return { text: 'Por favor, escolha uma das opções abaixo:', buttons: [btn('Enfermaria'), btn('Apartamento')] };
+                    return {
+                        text: 'Por favor, escolha uma das opções abaixo:',
+                        buttons: [btn('1025 Enfermaria'), btn('1025 Apartamento'), btn('MAIS Enfermaria'), btn('MAIS Apartamento')],
+                    };
                 }
 
                 session.step = ChatStep.CAPTURA_NOME;
@@ -338,16 +349,25 @@ export class ChatService {
         const quotes = pricingService.buildQuote(ages);
 
         const msg =
-            'Com base nas informações que você informou, temos duas opções:\n\n' +
-            '*Plano Prevent Ma+s*\n\n' +
-            '🛏 *Enfermaria*\n' +
-            pricingService.formatQuote(quotes.enfermaria) +
-            '\n🛏 *Apartamento*\n' +
-            pricingService.formatQuote(quotes.apartamento) +
-            '\n\nQual tipo de acomodação você prefere?';
+            'Com base nas informações que você informou, veja as opções disponíveis:\n\n' +
+            '*Prevent Senior 1025*\n' +
+            pricingService.formatQuote(quotes.ps1025_enfermaria) +
+            '\n' + pricingService.formatQuote(quotes.ps1025_apartamento) +
+            '\n*Prevent MAIS*\n' +
+            pricingService.formatQuote(quotes.mais_enfermaria) +
+            '\n' + pricingService.formatQuote(quotes.mais_apartamento) +
+            '\n\nQual plano e acomodação você prefere?';
 
         session.step = ChatStep.MOSTRAR_PRECO;
-        return { text: msg, buttons: [btn('Enfermaria'), btn('Apartamento')] };
+        return {
+            text: msg,
+            buttons: [
+                btn('1025 Enfermaria'),
+                btn('1025 Apartamento'),
+                btn('MAIS Enfermaria'),
+                btn('MAIS Apartamento'),
+            ],
+        };
     }
 
     private async gerarConfirmacao(session: ChatSession): Promise<ChatResponse> {

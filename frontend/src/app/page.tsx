@@ -6,16 +6,31 @@ import { Footer } from '@/components/Footer';
 import { HeroButtons } from '@/components/HeroButtons';
 import { PlanButton, NetworkButton } from '@/components/PlanButtons';
 
-const precosEnfermaria = [
-    { faixa: 'Até 43 anos', valor: 'R$ 883,53' },
-    { faixa: '44 a 58 anos', valor: 'R$ 1.162,60' },
-    { faixa: '59 anos em diante', valor: 'R$ 1.529,75' },
-];
-
-const precosApartamento = [
-    { faixa: 'Até 43 anos', valor: 'R$ 1.055,50' },
-    { faixa: '44 a 58 anos', valor: 'R$ 1.389,60' },
-    { faixa: '59 anos em diante', valor: 'R$ 1.828,43' },
+const planos = [
+    {
+        nome: 'Prevent Senior 1025',
+        badge: '',
+        destaque: false,
+        desc: 'Plano individual com excelente custo-benefício e toda a cobertura da rede Sancta Maggiore.',
+        precos: [
+            { faixa: 'Até 43 anos', enfermaria: 'R$ 759,84', apartamento: 'R$ 907,73' },
+            { faixa: '44 a 58 anos', enfermaria: 'R$ 999,84', apartamento: 'R$ 1.195,06' },
+            { faixa: '59 anos ou +', enfermaria: 'R$ 1.315,59', apartamento: 'R$ 1.572,45' },
+        ],
+        labelBtn: 'Contratar Prevent Senior 1025',
+    },
+    {
+        nome: 'Prevent MAIS',
+        badge: 'Mais Popular',
+        destaque: true,
+        desc: 'Plano premium com cobertura ampliada e todas as exclusividades da rede própria Prevent Senior.',
+        precos: [
+            { faixa: 'Até 43 anos', enfermaria: 'R$ 883,53', apartamento: 'R$ 1.055,50' },
+            { faixa: '44 a 58 anos', enfermaria: 'R$ 1.162,60', apartamento: 'R$ 1.389,60' },
+            { faixa: '59 anos ou +', enfermaria: 'R$ 1.529,75', apartamento: 'R$ 1.828,43' },
+        ],
+        labelBtn: 'Contratar Prevent MAIS',
+    },
 ];
 
 const hospitais = [
@@ -283,76 +298,65 @@ export default function PreventLandingPage() {
                             Quanto Custa o Plano Prevent Senior em 2026?
                         </h2>
                         <p className="text-gray-600">
-                            Preços transparentes por faixa etária. Sem surpresas. Sem reajuste por idade após os 50 anos.
+                            Dois tipos de plano, com opções de Enfermaria e Apartamento. Sem reajuste por idade após os 50 anos.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        {/* Enfermaria */}
-                        <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden border border-gray-100">
-                            <div className="p-8 border-b border-gray-100">
-                                <h3 className="text-2xl font-bold text-[#0f192b] mb-1">Prevent Senior Enfermaria 2026</h3>
-                                <p className="text-gray-500 text-sm">Excelente custo-benefício com todo o padrão Prevent Senior.</p>
-                            </div>
-                            <div className="p-8 bg-gray-50/50">
-                                <ul className="space-y-4" aria-label="Preços Prevent Senior Enfermaria por faixa etária">
-                                    {precosEnfermaria.map((item, i) => (
-                                        <li key={i} className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-gray-700">
-                                            <span className="font-semibold text-sm">{item.faixa}</span>
-                                            <span className="text-lg font-bold text-[#0f192b]">{item.valor}<span className="text-xs text-gray-400 font-normal">/mês</span></span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <ul className="mt-8 space-y-3 mb-8">
-                                    {incluso.map((item, i) => (
-                                        <li key={i} className="flex items-center gap-3 text-sm text-gray-600">
-                                            <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <PlanButton label="Quero o Plano Enfermaria" variant="dark" />
-                            </div>
-                        </div>
-
-                        {/* Apartamento */}
-                        <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden relative border-2 border-[#007aff] transform md:-translate-y-4">
-                            <div className="absolute top-0 right-0 bg-[#007aff] text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider rounded-bl-xl">
-                                Mais Popular
-                            </div>
-                            <div className="p-8 border-b border-gray-100">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-2xl font-bold text-[#0f192b]">Prevent Senior Apartamento 2026</h3>
-                                    <span className="bg-[#007aff]/10 text-[#007aff] text-xs font-bold px-3 py-1 rounded-full">PREMIUM</span>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-5xl mx-auto">
+                        {planos.map((plano, pi) => (
+                            <div
+                                key={pi}
+                                className={`bg-white rounded-3xl shadow-xl overflow-hidden relative ${plano.destaque ? 'border-2 border-[#007aff]' : 'border border-gray-100'}`}
+                            >
+                                {plano.badge && (
+                                    <div className="absolute top-0 right-0 bg-[#007aff] text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider rounded-bl-xl">
+                                        {plano.badge}
+                                    </div>
+                                )}
+                                {/* Cabeçalho do plano */}
+                                <div className="p-7 border-b border-gray-100">
+                                    <h3 className="text-2xl font-bold text-[#0f192b] mb-1">{plano.nome}</h3>
+                                    <p className="text-gray-500 text-sm">{plano.desc}</p>
                                 </div>
-                                <p className="text-gray-500 text-sm">Privacidade e conforto total em acomodação individual.</p>
+
+                                {/* Tabela de preços: Enfermaria x Apartamento */}
+                                <div className={`p-7 ${plano.destaque ? 'bg-[#fffcf9]' : 'bg-gray-50/50'}`}>
+                                    {/* Cabeçalho da tabela */}
+                                    <div className="grid grid-cols-3 gap-2 mb-3 px-1">
+                                        <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Faixa</div>
+                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wide text-center">Enfermaria</div>
+                                        <div className={`text-xs font-bold uppercase tracking-wide text-center ${plano.destaque ? 'text-[#007aff]' : 'text-gray-500'}`}>Apartamento</div>
+                                    </div>
+
+                                    <ul className="space-y-3" aria-label={`Preços ${plano.nome} por faixa etária`}>
+                                        {plano.precos.map((p, i) => (
+                                            <li key={i} className="grid grid-cols-3 gap-2 items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                                <span className="text-xs font-semibold text-gray-600">{p.faixa}</span>
+                                                <span className="text-sm font-bold text-[#0f192b] text-center">{p.enfermaria}<span className="text-[10px] text-gray-400 font-normal">/mês</span></span>
+                                                <span className={`text-sm font-bold text-center ${plano.destaque ? 'text-[#007aff]' : 'text-[#0f192b]'}`}>{p.apartamento}<span className="text-[10px] text-gray-400 font-normal">/mês</span></span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <ul className="mt-7 space-y-2 mb-7">
+                                        {incluso.map((item, i) => (
+                                            <li key={i} className="flex items-center gap-3 text-sm text-gray-600">
+                                                <CheckCircle className="w-4 h-4 text-[#007aff] flex-shrink-0" />
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <PlanButton label={plano.labelBtn} variant={plano.destaque ? 'blue' : 'dark'} />
+                                </div>
                             </div>
-                            <div className="p-8 bg-[#fffcf9]">
-                                <ul className="space-y-4" aria-label="Preços Prevent Senior Apartamento por faixa etária">
-                                    {precosApartamento.map((item, i) => (
-                                        <li key={i} className="flex justify-between items-center bg-white p-4 rounded-xl border border-[#007aff]/20 shadow-sm">
-                                            <span className="text-gray-600 font-semibold text-sm">{item.faixa}</span>
-                                            <span className="text-xl font-bold text-[#007aff]">{item.valor}<span className="text-xs text-gray-400 font-normal">/mês</span></span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <ul className="mt-8 space-y-3 mb-8">
-                                    {incluso.map((item, i) => (
-                                        <li key={i} className="flex items-center gap-3 text-sm text-gray-600">
-                                            <CheckCircle className="w-5 h-5 text-[#007aff] flex-shrink-0" />
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <PlanButton label="Quero o Plano Apartamento" variant="blue" />
-                            </div>
-                        </div>
+                        ))}
                     </div>
 
                     <div className="text-center mt-12">
                         <p className="text-xs text-gray-400 mb-2">ANS 503.736/25-1 (Enf) | ANS 503.737/25-9 (Apt)</p>
                         <p className="text-xs text-gray-400">* Valores de referência. Sujeitos a alteração sem aviso prévio.</p>
                     </div>
+
                 </div>
             </section>
 
