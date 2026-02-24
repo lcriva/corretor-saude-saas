@@ -9,6 +9,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 1,
         },
         {
+            url: 'https://preventseniormelhoridade.com.br/rede-credenciada',
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.9,
+        },
+        {
             url: 'https://preventseniormelhoridade.com.br/quem-somos',
             lastModified: new Date(),
             changeFrequency: 'monthly',
