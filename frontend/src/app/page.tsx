@@ -77,7 +77,7 @@ export default function PreventLandingPage() {
                         name: 'Plano de Saúde Prevent Senior',
                         image: 'https://preventseniormelhoridade.com.br/images/prevent-hero.png',
                         description:
-                            'Plano de saúde Prevent Senior especialista no Adulto+ (Terceira Idade). Sem reajuste por faixa etária a partir de 50 anos. Tabela de preços 2025 disponível.',
+                            'Plano de saúde Prevent Senior especialista no Adulto+ (Terceira Idade). Sem reajuste por faixa etária a partir de 50 anos. Tabela de preços 2026 disponível.',
                         brand: { '@type': 'Brand', name: 'Prevent Senior' },
                         offers: {
                             '@type': 'AggregateOffer',
@@ -275,12 +275,12 @@ export default function PreventLandingPage() {
             </section>
 
             {/* ══ Tabela de Preços ══════════════════════════════════════════════ */}
-            <section id="planos" className="py-24 bg-gray-50" aria-label="Tabela de preços Prevent Senior 2025">
+            <section id="planos" className="py-24 bg-gray-50" aria-label="Tabela de preços Prevent Senior 2026">
                 <div className="container mx-auto px-4">
                     <div className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Tabela de Preços 2025</span>
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Tabela de Preços 2026</span>
                         <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-4 text-[#0f192b]">
-                            Quanto Custa o Plano Prevent Senior?
+                            Quanto Custa o Plano Prevent Senior em 2026?
                         </h2>
                         <p className="text-gray-600">
                             Preços transparentes por faixa etária. Sem surpresas. Sem reajuste por idade após os 50 anos.
@@ -291,7 +291,7 @@ export default function PreventLandingPage() {
                         {/* Enfermaria */}
                         <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden border border-gray-100">
                             <div className="p-8 border-b border-gray-100">
-                                <h3 className="text-2xl font-bold text-[#0f192b] mb-1">Prevent Senior Enfermaria</h3>
+                                <h3 className="text-2xl font-bold text-[#0f192b] mb-1">Prevent Senior Enfermaria 2026</h3>
                                 <p className="text-gray-500 text-sm">Excelente custo-benefício com todo o padrão Prevent Senior.</p>
                             </div>
                             <div className="p-8 bg-gray-50/50">
@@ -322,7 +322,7 @@ export default function PreventLandingPage() {
                             </div>
                             <div className="p-8 border-b border-gray-100">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-2xl font-bold text-[#0f192b]">Prevent Senior Apartamento</h3>
+                                    <h3 className="text-2xl font-bold text-[#0f192b]">Prevent Senior Apartamento 2026</h3>
                                     <span className="bg-[#007aff]/10 text-[#007aff] text-xs font-bold px-3 py-1 rounded-full">PREMIUM</span>
                                 </div>
                                 <p className="text-gray-500 text-sm">Privacidade e conforto total em acomodação individual.</p>
@@ -370,7 +370,7 @@ export default function PreventLandingPage() {
                     <div className="space-y-6">
                         {[
                             {
-                                q: 'Qual o preço do plano Prevent Senior em 2025?',
+                                q: 'Qual o preço do plano Prevent Senior em 2026?',
                                 a: 'O plano Prevent Senior Enfermaria começa em R$ 883,53/mês (até 43 anos). Para 44 a 58 anos, R$ 1.162,60/mês. Para 59 anos em diante, R$ 1.529,75/mês. O Apartamento tem valores de R$ 1.055,50 a R$ 1.828,43/mês, dependendo da faixa etária.',
                             },
                             {

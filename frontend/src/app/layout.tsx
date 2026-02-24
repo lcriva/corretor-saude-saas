@@ -8,17 +8,17 @@ import { Suspense } from 'react'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-    title: 'Plano de Saúde Prevent Senior | Tabela de Preços 2025 e Cotação Online',
+    title: 'Plano de Saúde Prevent Senior | Tabela de Preços 2026 e Cotação Online',
     verification: {
         google: 'ZeBUEjpE_S46Z2aDEJqiFcXDZjh9si70ixxi31NLS0Y',
     },
     description:
-        'Contrate o plano de saúde Prevent Senior com tabela de preços 2025 atualizada. Especialista em planos para idosos e terceira idade (50+). Rede própria Sancta Maggiore em SP e RJ. Carência reduzida. Simule agora!',
+        'Contrate o plano de saúde Prevent Senior com tabela de preços 2026 atualizada. Especialista em planos para idosos e terceira idade (50+). Rede própria Sancta Maggiore em SP e RJ. Carência reduzida. Simule agora!',
     keywords: [
         'Prevent Senior',
         'plano de saúde Prevent Senior',
-        'preço plano Prevent Senior 2025',
-        'tabela de preços Prevent Senior',
+        'preço plano Prevent Senior 2026',
+        'tabela de preços Prevent Senior 2026',
         'contratar Prevent Senior',
         'plano de saúde para idosos',
         'plano de saúde terceira idade',
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
         canonical: '/',
     },
     openGraph: {
-        title: 'Plano de Saúde Prevent Senior | Preços e Cotação 2025',
+        title: 'Plano de Saúde Prevent Senior | Preços e Cotação 2026',
         description:
-            'Tabela de Preços Prevent Senior 2025. Rede Sancta Maggiore. O melhor plano de saúde para a terceira idade. Sem reajuste por faixa etária a partir dos 50 anos.',
+            'Tabela de Preços Prevent Senior 2026. Rede Sancta Maggiore. O melhor plano de saúde para a terceira idade. Sem reajuste por faixa etária a partir dos 50 anos.',
         url: 'https://preventseniormelhoridade.com.br',
         siteName: 'Prevent Senior — Cotação Online',
         images: [
@@ -55,8 +55,8 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Plano de Saúde Prevent Senior | Preços 2025',
-        description: 'Tabela de preços Prevent Senior 2025. Contrate online. Especialista no Adulto+.',
+        title: 'Plano de Saúde Prevent Senior | Preços 2026',
+        description: 'Tabela de preços Prevent Senior 2026. Contrate online. Especialista no Adulto+.',
         images: ['/images/prevent-hero.png'],
     },
     robots: {
