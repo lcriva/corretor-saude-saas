@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
     title: 'Plano de Saúde Prevent Senior | Tabela de Preços 2025 e Cotação Online',
+    verification: {
+        google: 'ZeBUEjpE_S46Z2aDEJqiFcXDZjh9si70ixxi31NLS0Y',
+    },
     description:
         'Contrate o plano de saúde Prevent Senior com tabela de preços 2025 atualizada. Especialista em planos para idosos e terceira idade (50+). Rede própria Sancta Maggiore em SP e RJ. Carência reduzida. Simule agora!',
     keywords: [
