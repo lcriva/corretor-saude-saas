@@ -159,7 +159,7 @@ export class ChatService {
                     session.collectedData.isIndividual = true;
                     session.collectedData.dependentCount = 0;
                     session.step = ChatStep.CIDADE;
-                    return { text: 'Em qual *cidade* você mora?' };
+                    return { text: 'Em qual cidade você mora?', buttons: [btn('São Paulo / SP'), btn('Rio de Janeiro / RJ'), btn('Outra cidade')] };
                 }
                 if (simDep) {
                     session.collectedData.isIndividual = false;
@@ -199,13 +199,31 @@ export class ChatService {
                 }
                 await this.updateLead(session.leadId, { idadesDependentes: session.collectedData.dependentAges });
                 session.step = ChatStep.CIDADE;
-                return { text: 'Em qual *cidade* você mora?' };
+                return { text: 'Em qual cidade você mora?', buttons: [btn('São Paulo / SP'), btn('Rio de Janeiro / RJ'), btn('Outra cidade')] };
             }
 
             // ─── CIDADE ───────────────────────────────────────────────────────
             case ChatStep.CIDADE: {
-                session.collectedData.cidade = messageText.trim();
-                await this.updateLead(session.leadId, { cidade: messageText.trim() });
+                const rawCidade = messageText.trim();
+                const rawLower = rawCidade.toLowerCase();
+
+                // Se o usuário pediu "outra cidade", pedir que digite
+                if (rawLower === 'outra cidade') {
+                    return { text: 'Qual cidade você mora? Digite o nome.' };
+                }
+
+                // Nenhuma cidade válida → repetir pergunta
+                if (!rawCidade || rawCidade.length < 2) {
+                    return { text: 'Por favor, informe sua cidade.', buttons: [btn('São Paulo / SP'), btn('Rio de Janeiro / RJ'), btn('Outra cidade')] };
+                }
+
+                // Normalizar atalhos dos botões
+                let cidadeNormal = rawCidade;
+                if (rawLower.includes('paulo') || rawLower === 'sp') cidadeNormal = 'São Paulo';
+                else if (rawLower.includes('janeiro') || rawLower === 'rj') cidadeNormal = 'Rio de Janeiro';
+
+                session.collectedData.cidade = cidadeNormal;
+                await this.updateLead(session.leadId, { cidade: cidadeNormal });
                 session.step = ChatStep.PLANO_ATUAL;
                 return { text: 'Você possui plano de saúde atualmente?', buttons: [btn('Não'), btn('Sim')] };
             }

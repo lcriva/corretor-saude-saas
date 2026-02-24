@@ -10,10 +10,22 @@ interface Message {
     content: string;
 }
 
-// Tipo ChatButton sincronizado com o backend
 interface ChatButton {
     label: string;
     url?: string;
+}
+
+// Converte *texto* em <strong> e \n em <br> para exibição no chat
+function renderMarkdown(text: string): string {
+    // Escapar HTML para segurança
+    const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    // *negrito* → <strong>
+    const withBold = escaped.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
+    // \n → <br>
+    return withBold.replace(/\n/g, '<br>');
 }
 
 export function ChatWidget() {
@@ -146,13 +158,12 @@ export function ChatWidget() {
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div
-                                    className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
+                                    className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
                                         ? 'bg-[#007aff] text-white rounded-tr-none'
                                         : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none shadow-sm'
                                         }`}
-                                >
-                                    {msg.content}
-                                </div>
+                                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                />
                             </div>
                         ))}
 
