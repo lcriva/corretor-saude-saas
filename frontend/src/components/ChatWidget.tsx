@@ -183,7 +183,11 @@ export function ChatWidget() {
                                     <button
                                         key={i}
                                         onClick={() => handleButton(btn)}
-                                        className="bg-white border-2 border-[#007aff] text-[#007aff] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#007aff] hover:text-white transition-all duration-150 shadow-sm flex items-center gap-1"
+                                        className={
+                                            btn.label === 'Aguardar Contato para Fechar o Plano'
+                                                ? 'bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-green-600 transition-all duration-150 shadow-sm flex items-center gap-1'
+                                                : 'bg-white border-2 border-[#007aff] text-[#007aff] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#007aff] hover:text-white transition-all duration-150 shadow-sm flex items-center gap-1'
+                                        }
                                     >
                                         {btn.url && <span className="text-xs">↗</span>}
                                         {btn.label}
