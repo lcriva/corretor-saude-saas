@@ -159,7 +159,7 @@ export class ChatService {
                     session.collectedData.isIndividual = true;
                     session.collectedData.dependentCount = 0;
                     session.step = ChatStep.CIDADE;
-                    return { text: 'Em qual cidade você mora?', buttons: [btn('São Paulo / SP'), btn('Rio de Janeiro / RJ'), btn('Outra cidade')] };
+                    return { text: 'Em qual cidade você mora?', buttons: [btn('SP'), btn('RJ')] };
                 }
                 if (simDep) {
                     session.collectedData.isIndividual = false;
@@ -199,7 +199,7 @@ export class ChatService {
                 }
                 await this.updateLead(session.leadId, { idadesDependentes: session.collectedData.dependentAges });
                 session.step = ChatStep.CIDADE;
-                return { text: 'Em qual cidade você mora?', buttons: [btn('São Paulo / SP'), btn('Rio de Janeiro / RJ'), btn('Outra cidade')] };
+                return { text: 'Em qual cidade você mora?', buttons: [btn('SP'), btn('RJ')] };
             }
 
             // ─── CIDADE ───────────────────────────────────────────────────────
@@ -207,20 +207,15 @@ export class ChatService {
                 const rawCidade = messageText.trim();
                 const rawLower = rawCidade.toLowerCase();
 
-                // Se o usuário pediu "outra cidade", pedir que digite
-                if (rawLower === 'outra cidade') {
-                    return { text: 'Qual cidade você mora? Digite o nome.' };
-                }
-
-                // Nenhuma cidade válida → repetir pergunta
+                // Nenhuma entrada válida → repetir
                 if (!rawCidade || rawCidade.length < 2) {
-                    return { text: 'Por favor, informe sua cidade.', buttons: [btn('São Paulo / SP'), btn('Rio de Janeiro / RJ'), btn('Outra cidade')] };
+                    return { text: 'Por favor, selecione ou digite sua cidade.', buttons: [btn('SP'), btn('RJ')] };
                 }
 
-                // Normalizar atalhos dos botões
+                // Normalizar botões SP / RJ
                 let cidadeNormal = rawCidade;
-                if (rawLower.includes('paulo') || rawLower === 'sp') cidadeNormal = 'São Paulo';
-                else if (rawLower.includes('janeiro') || rawLower === 'rj') cidadeNormal = 'Rio de Janeiro';
+                if (rawLower === 'sp' || rawLower.includes('paulo')) cidadeNormal = 'São Paulo';
+                else if (rawLower === 'rj' || rawLower.includes('janeiro')) cidadeNormal = 'Rio de Janeiro';
 
                 session.collectedData.cidade = cidadeNormal;
                 await this.updateLead(session.leadId, { cidade: cidadeNormal });
