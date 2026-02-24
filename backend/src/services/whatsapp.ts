@@ -284,13 +284,20 @@ class WhatsAppService {
         try {
             await this.sock.sendPresenceUpdate('composing', remoteJid);
 
-            // Usar Máquina de Estados (ChatService) em vez da OpenAI diretamente
-            const responseText = await chatService.processUserMessage(conversation.leadId, textoUsuario);
+            // Usar Máquina de Estados (ChatService)
+            const chatResponse = await chatService.processUserMessage(conversation.leadId, textoUsuario);
 
-            await this.enviarMensagem(remoteJid, responseText);
+            // Montar mensagem: texto + botões formatados como lista numerada (WhatsApp não tem botões nativos)
+            let mensagemFinal = chatResponse.text;
+            if (chatResponse.buttons && chatResponse.buttons.length > 0) {
+                mensagemFinal += '\n\n';
+                chatResponse.buttons.forEach((btn, i) => {
+                    mensagemFinal += `*${i + 1} -* ${btn}\n`;
+                });
+                mensagemFinal = mensagemFinal.trimEnd();
+            }
 
-            // Se a conversa terminou no ChatService, podemos limpar aqui também se desejar
-            // Mas o ChatService já gerencia o estado FINISHED
+            await this.enviarMensagem(remoteJid, mensagemFinal);
 
             console.log(`📤 Resposta enviada via State Machine para ${remoteJid}`);
         } catch (error) {

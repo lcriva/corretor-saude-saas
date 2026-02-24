@@ -38,7 +38,9 @@ model Lead {
   valorPlano    Float?   // Novo campo
   planoDesejado String?  // Novo campo
   jaPossuiPlano String?  // Novo campo
+  operadoraAtual String?  // Operadora do plano atual do cliente
   idadesDependentes Json? // Novo campo: Array de idades ex: [5, 12]
+  leadScore     Int      @default(0) // Score de prioridade: idade>55+3, plano atual+3, dependentes+2, apartamento+2
   scoreIA       Float?
   percentualConclusao Int @default(0)
   observacoes   String?

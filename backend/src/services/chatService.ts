@@ -1,29 +1,47 @@
 import { prisma } from '../lib/prisma';
 import { pricingService } from './pricingService';
-import OpenAI from 'openai';
 
+// ===== TIPOS DE RESPOSTA =====
+export interface ChatResponse {
+    text: string;
+    buttons?: string[];
+}
+
+// ===== STEPS DA MÁQUINA DE ESTADOS =====
 export enum ChatStep {
-    START = 'START',
-    AWAITING_NAME = 'AWAITING_NAME',
-    AWAITING_PHONE = 'AWAITING_PHONE',
-    AWAITING_CURRENT_PLAN = 'AWAITING_CURRENT_PLAN',
-    AWAITING_DEPENDENT_CHOICE = 'AWAITING_DEPENDENT_CHOICE',
-    AWAITING_DEPENDENT_COUNT = 'AWAITING_DEPENDENT_COUNT',
-    AWAITING_TITULAR_AGE = 'AWAITING_TITULAR_AGE',
-    AWAITING_DEPENDENT_AGES = 'AWAITING_DEPENDENT_AGES',
-    AWAITING_CITY = 'AWAITING_CITY',
-    AWAITING_PLAN_SELECTION = 'AWAITING_PLAN_SELECTION',
-    FINISHED = 'FINISHED'
+    // Boas-vindas e menu inicial
+    BOAS_VINDAS = 'BOAS_VINDAS',
+    CONHECER_PLANO = 'CONHECER_PLANO',
+
+    // Coleta de dados para simulação
+    SIMULACAO = 'SIMULACAO',
+    DADOS_TITULAR = 'DADOS_TITULAR',
+    DEPENDENTES = 'DEPENDENTES',
+    QUANTIDADE_DEPENDENTES = 'QUANTIDADE_DEPENDENTES',
+    IDADE_DEPENDENTES = 'IDADE_DEPENDENTES',
+    CIDADE = 'CIDADE',
+    PLANO_ATUAL = 'PLANO_ATUAL',
+    PLANO_ATUAL_OPERADORA = 'PLANO_ATUAL_OPERADORA',
+
+    // Cotação e captura
+    MOSTRAR_PRECO = 'MOSTRAR_PRECO',
+    CAPTURA_NOME = 'CAPTURA_NOME',
+    CAPTURA_TELEFONE = 'CAPTURA_TELEFONE',
+
+    // Encerramento
+    CONFIRMACAO = 'CONFIRMACAO',
+    ESPECIALISTA = 'ESPECIALISTA',
+    FINISHED = 'FINISHED',
 }
 
 export interface ChatSession {
     leadId: string;
     step: ChatStep;
-    history: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
     lastInteraction: number;
     collectedData: {
         nome?: string;
-        jaPossuiPlano?: string;
+        jaPossuiPlano?: boolean;
+        operadoraAtual?: string;
         isIndividual?: boolean;
         dependentCount?: number;
         titularAge?: number;
@@ -41,291 +59,443 @@ export class ChatService {
 
     async getOrCreateSession(leadId: string): Promise<ChatSession> {
         let session = sessions.get(leadId);
-
         if (!session) {
             session = {
                 leadId,
-                step: ChatStep.START,
-                history: [],
+                step: ChatStep.BOAS_VINDAS,
                 lastInteraction: Date.now(),
                 collectedData: {
                     dependentAges: [],
-                    currentDependentIndex: 0
-                }
+                    currentDependentIndex: 0,
+                },
             };
             sessions.set(leadId, session);
-            console.log(`[ChatService v3.0] 🚀 Sessão iniciada para lead ${leadId}`);
+            console.log(`[ChatService v4.0] 🚀 Nova sessão para lead ${leadId}`);
         }
         return session;
     }
 
-    async processUserMessage(leadId: string, messageText: string): Promise<string> {
+    // ===== PONTO DE ENTRADA PRINCIPAL =====
+    async processUserMessage(leadId: string, messageText: string): Promise<ChatResponse> {
         const session = await this.getOrCreateSession(leadId);
         session.lastInteraction = Date.now();
 
         if (messageText) {
-            session.history.push({ role: 'user', content: messageText });
             await this.saveInteraction(leadId, 'user', messageText);
         }
 
         try {
-            switch (session.step) {
-                case ChatStep.START: {
-                    session.step = ChatStep.AWAITING_NAME;
-                    const msgIntro = "Olá! Eu sou a MarIA, especialista digital da Prevent Sênior 💙\n\n" +
-                        "A Prevent Sênior é a operadora especialista no Adulto+, oferecendo:\n" +
-                        "• Rede própria de alta qualidade (Hospitais Sancta Maggiore)\n" +
-                        "• Sem reajuste por faixa etária a partir dos 50 anos\n" +
-                        "• Programas de medicina preventiva exclusivos\n" +
-                        "• Atendimento humano e especializado\n\n" +
-                        "Para começarmos sua cotação, qual o seu **Nome Completo**?";
-
-                    await this.saveInteraction(leadId, 'assistant', msgIntro);
-                    return msgIntro;
-                }
-
-                case ChatStep.AWAITING_NAME: {
-                    session.collectedData.nome = messageText;
-                    await this.updateLead(leadId, { nome: messageText });
-
-                    session.step = ChatStep.AWAITING_CURRENT_PLAN;
-                    return "Prazer em conhecer você! 😊\n\nVocê já possui algum plano de saúde atualmente? Se sim, qual?";
-                }
-
-                case ChatStep.AWAITING_PHONE: {
-                    // Limpar caracteres não numéricos
-                    const phone = messageText.replace(/\D/g, '');
-                    if (phone.length < 10) {
-                        return "Por favor, informe seu WhatsApp com DDD (ex: 11999999999).";
-                    }
-
-                    await this.updateLead(leadId, { telefone: phone });
-
-                    session.step = ChatStep.FINISHED;
-                    return this.getFinalMessage(leadId);
-                }
-
-                case ChatStep.AWAITING_CURRENT_PLAN: {
-                    session.collectedData.jaPossuiPlano = messageText;
-                    await this.updateLead(leadId, { jaPossuiPlano: messageText });
-
-                    session.step = ChatStep.AWAITING_DEPENDENT_CHOICE;
-                    const msg = "Entendido. Este plano seria somente para você ou deseja incluir esposa(o) e dependentes?";
-                    return msg;
-                }
-
-                case ChatStep.AWAITING_DEPENDENT_CHOICE: {
-                    const text = messageText.toLowerCase();
-                    if (text.includes('somente') || text.includes('apenas') || text.includes('só') || text.includes('individual') || (text.includes('não') && !text.includes('sim'))) {
-                        session.collectedData.isIndividual = true;
-                        session.collectedData.dependentCount = 0;
-                        session.step = ChatStep.AWAITING_TITULAR_AGE;
-                        return "Combinado. Qual é a sua idade?";
-                    } else {
-                        session.collectedData.isIndividual = false;
-                        session.step = ChatStep.AWAITING_DEPENDENT_COUNT;
-                        return "Certo! Além de você, quantas pessoas a mais deseja incluir no plano?";
-                    }
-                }
-
-                case ChatStep.AWAITING_DEPENDENT_COUNT: {
-                    const count = parseInt(messageText.replace(/\D/g, ''));
-                    if (isNaN(count) || count < 0) {
-                        return "Por favor, informe apenas o número de dependentes (ex: 1, 2...).";
-                    }
-                    session.collectedData.dependentCount = count;
-                    await this.updateLead(leadId, { dependentes: count });
-
-                    session.step = ChatStep.AWAITING_TITULAR_AGE;
-                    return "Entendido. Qual é a sua idade (Titular)?";
-                }
-
-                case ChatStep.AWAITING_TITULAR_AGE: {
-                    const age = parseInt(messageText.replace(/\D/g, ''));
-                    if (isNaN(age) || age < 0 || age > 120) {
-                        return "Por favor, informe uma idade válida (número inteiro).";
-                    }
-                    session.collectedData.titularAge = age;
-                    await this.updateLead(leadId, { idade: age });
-
-                    if (session.collectedData.dependentCount && session.collectedData.dependentCount > 0) {
-                        session.step = ChatStep.AWAITING_DEPENDENT_AGES;
-                        session.collectedData.currentDependentIndex = 1;
-                        return `Qual a idade do seu 1º dependente?`;
-                    } else {
-                        session.step = ChatStep.AWAITING_CITY;
-                        return "E para finalizar, em qual cidade você mora?";
-                    }
-                }
-
-                case ChatStep.AWAITING_DEPENDENT_AGES: {
-                    const age = parseInt(messageText.replace(/\D/g, ''));
-                    if (isNaN(age) || age < 0 || age > 120) {
-                        return "Por favor, informe uma idade válida.";
-                    }
-
-                    session.collectedData.dependentAges.push(age);
-                    const currentIndex = session.collectedData.currentDependentIndex;
-                    const totalNeeded = session.collectedData.dependentCount || 0;
-
-                    if (currentIndex < totalNeeded) {
-                        session.collectedData.currentDependentIndex++;
-                        return `Qual a idade do seu ${session.collectedData.currentDependentIndex}º dependente?`;
-                    } else {
-                        await this.updateLead(leadId, { idadesDependentes: session.collectedData.dependentAges });
-
-                        let confirmMsg = "Perfeito. Registrei as idades: \n" +
-                            `- Titular: ${session.collectedData.titularAge} anos\n`;
-                        session.collectedData.dependentAges.forEach((a, i) => {
-                            confirmMsg += `- Dependente ${i + 1}: ${a} anos\n`;
-                        });
-
-                        session.step = ChatStep.AWAITING_CITY;
-                        confirmMsg += "\nQual cidade você mora?";
-                        return confirmMsg;
-                    }
-                }
-
-                case ChatStep.AWAITING_CITY: {
-                    session.collectedData.cidade = messageText;
-                    await this.updateLead(leadId, { cidade: messageText });
-
-                    const ages = [session.collectedData.titularAge!, ...session.collectedData.dependentAges];
-                    const quotes = pricingService.buildQuote(ages);
-
-                    let response = "Excelente! Calculei as melhores opções para você na Prevent Sênior:\n\n";
-
-                    response += "🟢 **Opção 1:**\n";
-                    response += pricingService.formatQuote(quotes.enfermaria);
-
-                    response += "\n🔵 **Opção 2:**\n";
-                    response += pricingService.formatQuote(quotes.apartamento);
-
-                    response += "\n**Quer seguir com qual opção (Enfermaria ou Apartamento) para eu encaminhar para fechamento?**";
-
-                    session.step = ChatStep.AWAITING_PLAN_SELECTION;
-                    return response;
-                }
-
-                case ChatStep.AWAITING_PLAN_SELECTION: {
-                    const choice = messageText.toLowerCase();
-                    const ages = [session.collectedData.titularAge!, ...session.collectedData.dependentAges];
-                    const quotes = pricingService.buildQuote(ages);
-
-                    if (choice.includes('enfermaria')) {
-                        const valor = quotes.enfermaria.total;
-                        session.collectedData.planoDesejado = "Enfermaria";
-                        session.collectedData.valorPlano = valor;
-
-                        // Atualizar dados básicos
-                        await this.updateLead(leadId, {
-                            planoDesejado: "Enfermaria",
-                            valorPlano: valor,
-                            valorEstimado: valor,
-                            status: 'negociacao',
-                            percentualConclusao: 90 // Quase lá
-                        });
-
-                        // Verificar se precisa de telefone (apenas se for site e ainda for placeholder)
-                        const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-                        const needsPhone = lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-');
-
-                        if (needsPhone) {
-                            session.step = ChatStep.AWAITING_PHONE;
-                            return "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.\n\nPara finalizarmos, qual o seu **WhatsApp com DDD** para nosso especialista entrar em contato?";
-                        } else {
-                            session.step = ChatStep.FINISHED;
-                            return this.getFinalMessage(leadId, "Ótima escolha! O plano Enfermaria oferece um excelente custo-benefício com toda a qualidade Prevent Sênior.");
-                        }
-                    } else if (choice.includes('apartamento')) {
-                        const valor = quotes.apartamento.total;
-                        session.collectedData.planoDesejado = "Apartamento";
-                        session.collectedData.valorPlano = valor;
-
-                        await this.updateLead(leadId, {
-                            planoDesejado: "Apartamento",
-                            valorPlano: valor,
-                            valorEstimado: valor,
-                            status: 'negociacao',
-                            percentualConclusao: 90
-                        });
-
-                        const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-                        const needsPhone = lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-');
-
-                        if (needsPhone) {
-                            session.step = ChatStep.AWAITING_PHONE;
-                            return "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.\n\nPara finalizarmos, qual o seu **WhatsApp com DDD** para nosso especialista entrar em contato?";
-                        } else {
-                            session.step = ChatStep.FINISHED;
-                            return this.getFinalMessage(leadId, "Excelente escolha! O plano Apartamento garante total privacidade e conforto nos Hospitais Sancta Maggiore.");
-                        }
-                    } else {
-                        return "Por favor, digite *Enfermaria* ou *Apartamento* para prosseguirmos com seu fechamento.";
-                    }
-                }
-
-                case ChatStep.FINISHED: {
-                    return "Seu atendimento já foi encaminhado para um de nossos especialistas. Se precisar de mais alguma coisa, estou à disposição!";
-                }
-
-                default:
-                    return "Desculpe, me perdi um pouco. Pode repetir?";
-            }
+            const response = await this.handleStep(session, messageText);
+            await this.saveInteraction(leadId, 'assistant', response.text);
+            return response;
         } catch (error) {
             console.error('❌ Erro no ChatService:', error);
-            return "Erro interno ao processar mensagem.";
+            return { text: 'Erro interno ao processar mensagem.' };
         }
     }
+
+    private async handleStep(session: ChatSession, messageText: string): Promise<ChatResponse> {
+        const text = messageText.trim().toLowerCase();
+
+        switch (session.step) {
+
+            // ─── BOAS-VINDAS ─────────────────────────────────────────────────
+            case ChatStep.BOAS_VINDAS: {
+                session.step = ChatStep.SIMULACAO;
+                return {
+                    text:
+                        'Olá! 👋\n\n' +
+                        'Sou a *MarIA*, especialista digital da Prevent Senior.\n\n' +
+                        '🏥 Mais de 3.000 pessoas já fizeram a simulação aqui!\n\n' +
+                        'Posso calcular o valor do seu plano de saúde em menos de 30 segundos.\n\n' +
+                        'O que deseja fazer?',
+                    buttons: ['Simular plano', 'Falar com especialista', 'Conhecer o plano'],
+                };
+            }
+
+            // ─── CONHECER O PLANO ─────────────────────────────────────────────
+            case ChatStep.CONHECER_PLANO: {
+                session.step = ChatStep.SIMULACAO;
+                return {
+                    text:
+                        'A Prevent Senior é referência em saúde há mais de *28 anos*. 💙\n\n' +
+                        'Alguns diferenciais do plano:\n\n' +
+                        '✔ Sem coparticipação\n' +
+                        '✔ Rede com Hospitais Sancta Maggiore\n' +
+                        '✔ Telemedicina e atendimento domiciliar\n' +
+                        '✔ Sem reajuste por idade após 50 anos\n\n' +
+                        'Agora posso calcular o valor do plano ideal para você.',
+                    buttons: ['Simular plano'],
+                };
+            }
+
+            // ─── SIMULACAO (intro) ─────────────────────────────────────────────
+            case ChatStep.SIMULACAO: {
+                // Redirecionar botões da tela de boas-vindas
+                if (text.includes('especialista') || text === 'falar com especialista') {
+                    return this.encaminharEspecialista(session);
+                }
+                if (text.includes('conhecer') || text === 'conhecer o plano') {
+                    session.step = ChatStep.CONHECER_PLANO;
+                    return this.handleStep(session, '');
+                }
+
+                // Qualquer outra coisa (incluindo "Simular plano"): ir para coleta de dados
+                session.step = ChatStep.DADOS_TITULAR;
+                return {
+                    text:
+                        'Perfeito! ✅\n\n' +
+                        'Para calcular o valor do plano, preciso de algumas informações rápidas.\n\n' +
+                        'Qual a *idade do titular* do plano?',
+                };
+            }
+
+            // ─── DADOS DO TITULAR ─────────────────────────────────────────────
+            case ChatStep.DADOS_TITULAR: {
+                const age = parseInt(messageText.replace(/\D/g, ''));
+                if (isNaN(age) || age < 0 || age > 120) {
+                    return { text: 'Por favor, informe uma idade válida (ex: 45).' };
+                }
+                session.collectedData.titularAge = age;
+                await this.updateLead(session.leadId, { idade: age });
+
+                session.step = ChatStep.DEPENDENTES;
+                return {
+                    text: 'Deseja incluir dependentes no plano?',
+                    buttons: ['Não', 'Sim'],
+                };
+            }
+
+            // ─── DEPENDENTES ──────────────────────────────────────────────────
+            case ChatStep.DEPENDENTES: {
+                const temDependentes =
+                    text === 'sim' || text.includes('sim') || text.includes('s');
+                const naoDependentes =
+                    text === 'não' || text === 'nao' || text.includes('não') ||
+                    text.includes('nao') || text === 'n';
+
+                if (naoDependentes) {
+                    session.collectedData.isIndividual = true;
+                    session.collectedData.dependentCount = 0;
+                    session.step = ChatStep.CIDADE;
+                    return { text: 'Em qual *cidade* você mora?' };
+                }
+
+                if (temDependentes) {
+                    session.collectedData.isIndividual = false;
+                    session.step = ChatStep.QUANTIDADE_DEPENDENTES;
+                    return { text: 'Quantos dependentes deseja incluir?' };
+                }
+
+                return {
+                    text: 'Por favor, responda *Sim* ou *Não*.',
+                    buttons: ['Não', 'Sim'],
+                };
+            }
+
+            // ─── QUANTIDADE DE DEPENDENTES ────────────────────────────────────
+            case ChatStep.QUANTIDADE_DEPENDENTES: {
+                const count = parseInt(messageText.replace(/\D/g, ''));
+                if (isNaN(count) || count < 1) {
+                    return { text: 'Por favor, informe o número de dependentes (ex: 1, 2...).' };
+                }
+                session.collectedData.dependentCount = count;
+                session.collectedData.dependentAges = [];
+                session.collectedData.currentDependentIndex = 1;
+                await this.updateLead(session.leadId, { dependentes: count });
+
+                session.step = ChatStep.IDADE_DEPENDENTES;
+                return { text: `Informe a idade do *1º dependente*.\nExemplo: 62` };
+            }
+
+            // ─── IDADES DOS DEPENDENTES ───────────────────────────────────────
+            case ChatStep.IDADE_DEPENDENTES: {
+                const age = parseInt(messageText.replace(/\D/g, ''));
+                if (isNaN(age) || age < 0 || age > 120) {
+                    return { text: 'Por favor, informe uma idade válida (ex: 62).' };
+                }
+
+                session.collectedData.dependentAges.push(age);
+                const idx = session.collectedData.currentDependentIndex;
+                const total = session.collectedData.dependentCount || 0;
+
+                if (idx < total) {
+                    session.collectedData.currentDependentIndex++;
+                    return { text: `Informe a idade do *${idx + 1}º dependente*.` };
+                }
+
+                // Coletou todas as idades
+                await this.updateLead(session.leadId, {
+                    idadesDependentes: session.collectedData.dependentAges,
+                });
+
+                session.step = ChatStep.CIDADE;
+                return { text: 'Em qual *cidade* você mora?' };
+            }
+
+            // ─── CIDADE ───────────────────────────────────────────────────────
+            case ChatStep.CIDADE: {
+                session.collectedData.cidade = messageText.trim();
+                await this.updateLead(session.leadId, { cidade: messageText.trim() });
+
+                session.step = ChatStep.PLANO_ATUAL;
+                return {
+                    text: 'Você possui plano de saúde atualmente?',
+                    buttons: ['Não', 'Sim'],
+                };
+            }
+
+            // ─── PLANO ATUAL ──────────────────────────────────────────────────
+            case ChatStep.PLANO_ATUAL: {
+                const temPlano =
+                    text === 'sim' || text.includes('sim');
+                const naoPlano =
+                    text === 'não' || text === 'nao' || text.includes('não') ||
+                    text.includes('nao');
+
+                if (naoPlano) {
+                    session.collectedData.jaPossuiPlano = false;
+                    await this.updateLead(session.leadId, { jaPossuiPlano: 'Não' });
+                    return this.mostrarPreco(session);
+                }
+
+                if (temPlano) {
+                    session.collectedData.jaPossuiPlano = true;
+                    session.step = ChatStep.PLANO_ATUAL_OPERADORA;
+                    return { text: 'Qual é a operadora do seu plano atual?' };
+                }
+
+                return {
+                    text: 'Por favor, responda *Sim* ou *Não*.',
+                    buttons: ['Não', 'Sim'],
+                };
+            }
+
+            // ─── OPERADORA ATUAL ──────────────────────────────────────────────
+            case ChatStep.PLANO_ATUAL_OPERADORA: {
+                const operadora = messageText.trim();
+                session.collectedData.operadoraAtual = operadora;
+                await this.updateLead(session.leadId, {
+                    jaPossuiPlano: operadora,
+                    operadoraAtual: operadora,
+                });
+                return this.mostrarPreco(session);
+            }
+
+            // ─── MOSTRAR PREÇO (escolha do tipo de plano) ────────────────────
+            case ChatStep.MOSTRAR_PRECO: {
+                const escolha = text;
+                const ages = [
+                    session.collectedData.titularAge!,
+                    ...session.collectedData.dependentAges,
+                ];
+                const quotes = pricingService.buildQuote(ages);
+
+                if (escolha.includes('enfermaria')) {
+                    session.collectedData.planoDesejado = 'Enfermaria';
+                    session.collectedData.valorPlano = quotes.enfermaria.total;
+                    await this.updateLead(session.leadId, {
+                        planoDesejado: 'Enfermaria',
+                        valorPlano: quotes.enfermaria.total,
+                        valorEstimado: quotes.enfermaria.total,
+                        status: 'negociacao',
+                        percentualConclusao: 80,
+                    });
+                } else if (escolha.includes('apartamento')) {
+                    session.collectedData.planoDesejado = 'Apartamento';
+                    session.collectedData.valorPlano = quotes.apartamento.total;
+                    await this.updateLead(session.leadId, {
+                        planoDesejado: 'Apartamento',
+                        valorPlano: quotes.apartamento.total,
+                        valorEstimado: quotes.apartamento.total,
+                        status: 'negociacao',
+                        percentualConclusao: 80,
+                    });
+                } else {
+                    return {
+                        text: 'Por favor, escolha uma das opções abaixo:',
+                        buttons: ['Enfermaria', 'Apartamento'],
+                    };
+                }
+
+                session.step = ChatStep.CAPTURA_NOME;
+                return {
+                    text:
+                        'Perfeito! 🎉\n\n' +
+                        'Agora vou preparar sua proposta completa.\n\n' +
+                        'Qual o seu *nome completo*?',
+                };
+            }
+
+            // ─── CAPTURA DO NOME ──────────────────────────────────────────────
+            case ChatStep.CAPTURA_NOME: {
+                const nome = messageText.trim();
+                if (nome.length < 3) {
+                    return { text: 'Por favor, informe seu nome completo.' };
+                }
+                session.collectedData.nome = nome;
+                await this.updateLead(session.leadId, { nome });
+
+                // Verificar se é site (precisamos do telefone) ou WhatsApp (já tem telefone)
+                const lead = await prisma.lead.findUnique({ where: { id: session.leadId } });
+                const needsPhone = lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-');
+
+                if (needsPhone) {
+                    session.step = ChatStep.CAPTURA_TELEFONE;
+                    return { text: 'Qual o seu *WhatsApp com DDD*?\n\nExemplo: 11999999999' };
+                } else {
+                    return this.gerarConfirmacao(session);
+                }
+            }
+
+            // ─── CAPTURA DO TELEFONE (site) ───────────────────────────────────
+            case ChatStep.CAPTURA_TELEFONE: {
+                const phone = messageText.replace(/\D/g, '');
+                if (phone.length < 10) {
+                    return { text: 'Por favor, informe o WhatsApp com DDD (ex: 11999999999).' };
+                }
+                await this.updateLead(session.leadId, { telefone: phone });
+                return this.gerarConfirmacao(session);
+            }
+
+            // ─── CONFIRMAÇÃO ──────────────────────────────────────────────────
+            case ChatStep.CONFIRMACAO: {
+                if (text.includes('especialista') || text.includes('falar')) {
+                    return this.encaminharEspecialista(session);
+                }
+                if (text.includes('rede') || text.includes('credenciada')) {
+                    return {
+                        text:
+                            '🏥 *Rede Credenciada Prevent Senior*\n\n' +
+                            'Acesse a rede completa em:\n' +
+                            'https://www.preventsenior.com.br/rede-credenciada\n\n' +
+                            'Nossal rede inclui Hospitais Sancta Maggiore, ' +
+                            'clínicas especializadas, laboratórios e muito mais.\n\n' +
+                            '👨‍⚕️ Quer falar com um especialista para finalizar a contratação?',
+                        buttons: ['Falar com especialista'],
+                    };
+                }
+                return {
+                    text: 'Como posso te ajudar? 😊',
+                    buttons: ['Ver rede credenciada', 'Falar com especialista'],
+                };
+            }
+
+            // ─── ESPECIALISTA ─────────────────────────────────────────────────
+            case ChatStep.ESPECIALISTA: {
+                return {
+                    text: 'Seu atendimento já foi encaminhado! Um especialista entrará em contato em breve. 💙',
+                };
+            }
+
+            // ─── FINISHED ─────────────────────────────────────────────────────
+            case ChatStep.FINISHED: {
+                return {
+                    text: 'Seu atendimento já foi encaminhado. Se precisar de mais alguma coisa, é só chamar! 😊',
+                };
+            }
+
+            default:
+                return { text: 'Desculpe, me perdi. Pode repetir?' };
+        }
+    }
+
+    // ===== HELPERS =====
+
+    private async mostrarPreco(session: ChatSession): Promise<ChatResponse> {
+        const ages = [
+            session.collectedData.titularAge!,
+            ...session.collectedData.dependentAges,
+        ];
+        const quotes = pricingService.buildQuote(ages);
+
+        let msg =
+            'Com base nas informações que você informou, temos duas opções:\n\n' +
+            '*Plano Prevent Ma+s*\n\n' +
+            '🛏 *Enfermaria*\n' +
+            pricingService.formatQuote(quotes.enfermaria) +
+            '\n🛏 *Apartamento*\n' +
+            pricingService.formatQuote(quotes.apartamento) +
+            '\n\nQual tipo de acomodação você prefere?';
+
+        session.step = ChatStep.MOSTRAR_PRECO;
+        return {
+            text: msg,
+            buttons: ['Enfermaria', 'Apartamento'],
+        };
+    }
+
+    private async gerarConfirmacao(session: ChatSession): Promise<ChatResponse> {
+        // Calcular lead score
+        const score = this.calcularLeadScore(session);
+        await this.updateLead(session.leadId, {
+            leadScore: score,
+            status: 'negociacao',
+            percentualConclusao: 95,
+        });
+
+        session.step = ChatStep.CONFIRMACAO;
+        return {
+            text:
+                'Obrigado! 🎉\n\n' +
+                'Um especialista da Prevent Senior vai entrar em contato com você para:\n\n' +
+                '✔ Confirmar os valores\n' +
+                '✔ Apresentar a rede credenciada\n' +
+                '✔ Explicar as carências\n' +
+                '✔ Finalizar a contratação\n\n' +
+                'Se quiser, também posso enviar agora os detalhes da rede hospitalar.',
+            buttons: ['Ver rede credenciada', 'Falar com especialista'],
+        };
+    }
+
+    private async encaminharEspecialista(session: ChatSession): Promise<ChatResponse> {
+        await this.updateLead(session.leadId, {
+            status: 'negociacao',
+            percentualConclusao: 100,
+        });
+        session.step = ChatStep.ESPECIALISTA;
+        return {
+            text:
+                'Vou encaminhar você agora para um especialista. Aguarde um momento... ✅\n\n' +
+                'Em breve nossa equipe entrará em contato! 💙',
+        };
+    }
+
+    private calcularLeadScore(session: ChatSession): number {
+        let score = 0;
+        const { titularAge, jaPossuiPlano, dependentCount, planoDesejado } = session.collectedData;
+
+        if (titularAge && titularAge > 55) score += 3;
+        if (jaPossuiPlano) score += 3;
+        if (dependentCount && dependentCount > 0) score += 2;
+        if (planoDesejado === 'Apartamento') score += 2;
+
+        console.log(`[ChatService v4.0] 🏆 Lead score calculado: ${score}`);
+        return score;
+    }
+
+    // ===== CRUD / PERSISTÊNCIA =====
 
     async createLead(userId: string, origem: string = 'web'): Promise<string> {
-        console.log(`[ChatService v3.0] 🆕 Criando novo lead para userId: ${userId}, origem: ${origem}`);
-        try {
-            const lead = await prisma.lead.create({
-                data: {
-                    userId,
-                    origem,
-                    telefone: 'web-' + Date.now(), // Placeholder
-                    nome: 'Visitante Site',
-                    status: 'novo'
-                }
-            });
-            console.log(`[ChatService v3.0] ✅ Lead criado com ID: ${lead.id}`);
-            return lead.id;
-        } catch (error) {
-            console.error('[ChatService v3.0] ❌ Erro ao criar lead no banco:', error);
-            throw error;
-        }
-    }
-
-    private async getFinalMessage(leadId: string, customIntro?: string): Promise<string> {
-        try {
-            const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-            const isSite = lead?.origem !== 'whatsapp';
-
-            const intro = customIntro ? customIntro + "\n\n" : "Perfeito! Já guardei seu contato.\n\n";
-
-            if (isSite) {
-                return intro + "Fique tranquilo, nosso especialista vai entrar em contato com você pelo WhatsApp que você informou em breve para finalizarmos tudo! 🚀💙";
-            } else {
-                return intro + "Para finalizarmos, envie para nosso WhatsApp uma foto do seu RG/CNH, Comprovante de Residência e Cartão do SUS. Nosso especialista vai entrar em contato em breve para confirmar o cadastro.";
-            }
-        } catch (error) {
-            console.error('[ChatService v3.0] Erro ao gerar mensagem final:', error);
-            return "Obrigado! Em breve nosso especialista entrará em contato.";
-        }
+        console.log(`[ChatService v4.0] 🆕 Criando novo lead para userId: ${userId}`);
+        const lead = await prisma.lead.create({
+            data: {
+                userId,
+                origem,
+                telefone: 'web-' + Date.now(),
+                nome: 'Visitante Site',
+                status: 'novo',
+            },
+        });
+        console.log(`[ChatService v4.0] ✅ Lead criado: ${lead.id}`);
+        return lead.id;
     }
 
     private async updateLead(leadId: string, dados: any) {
         try {
-            console.log(`[ChatService v3.0] Atualizando lead ${leadId} com dados:`, JSON.stringify(dados));
-            await prisma.lead.update({
-                where: { id: leadId },
-                data: dados
-            });
-            console.log(`[ChatService v3.0] Lead ${leadId} atualizado com sucesso!`);
+            await prisma.lead.update({ where: { id: leadId }, data: dados });
         } catch (error) {
-            console.error(`[ChatService v3.0] ❌ Erro ao atualizar lead ${leadId}:`, error);
+            console.error(`[ChatService v4.0] ❌ Erro ao atualizar lead ${leadId}:`, error);
         }
     }
 
@@ -335,11 +505,11 @@ export class ChatService {
                 data: {
                     leadId,
                     tipo: role === 'user' ? 'mensagem_usuario' : 'mensagem_marIA',
-                    descricao: content.substring(0, 500) // Limitar tamanho
-                }
+                    descricao: content.substring(0, 500),
+                },
             });
         } catch (error) {
-            console.error('[ChatService v3.0] Erro ao salvar interação:', error);
+            console.error('[ChatService v4.0] Erro ao salvar interação:', error);
         }
     }
 }
