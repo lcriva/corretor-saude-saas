@@ -360,6 +360,112 @@ export default function PreventLandingPage() {
                 </div>
             </section>
 
+            {/* ══ Tabela Detalhada de Valores ═══════════════════════════════════ */}
+            <section id="tabela-completa" className="py-20 bg-white" aria-label="Tabela completa de preços Prevent Senior por faixa etária">
+                <div className="container mx-auto px-4 max-w-5xl">
+                    <div className="text-center mb-12">
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Tabela Completa 2026</span>
+                        <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-3 text-[#0f192b]">
+                            Valores por Faixa Etária — Todos os Planos
+                        </h2>
+                        <p className="text-gray-500 text-sm max-w-2xl mx-auto">
+                            Individual · Sem coparticipação · Sem cobrança de taxa de inscrição ·
+                            Área de cobertura: São Paulo, São Bernardo do Campo, Santo André e Santos ·
+                            Válido a partir de Outubro de 2025
+                        </p>
+                    </div>
+
+                    {/* Enfermaria */}
+                    <div className="mb-10">
+                        <h3 className="text-lg font-bold text-[#0f192b] mb-4 flex items-center gap-2">
+                            🛏 Enfermaria (E)
+                        </h3>
+                        <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-[#0f192b] text-white">
+                                        <th className="px-5 py-3 text-left font-bold">Faixa Etária</th>
+                                        <th className="px-5 py-3 text-center font-bold">Prevent Senior 1025</th>
+                                        <th className="px-5 py-3 text-center font-bold text-[#60a5fa]">Prevent MAIS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[
+                                        { faixa: '0 a 18 anos', ps: 'R$ 759,84', mais: 'R$ 883,53' },
+                                        { faixa: '19 a 23 anos', ps: 'R$ 759,84', mais: 'R$ 883,53' },
+                                        { faixa: '24 a 28 anos', ps: 'R$ 759,84', mais: 'R$ 883,53' },
+                                        { faixa: '29 a 33 anos', ps: 'R$ 759,84', mais: 'R$ 883,53' },
+                                        { faixa: '34 a 38 anos', ps: 'R$ 759,84', mais: 'R$ 883,53' },
+                                        { faixa: '39 a 43 anos', ps: 'R$ 759,84', mais: 'R$ 883,53' },
+                                        { faixa: '44 a 48 anos', ps: 'R$ 999,84', mais: 'R$ 1.162,60' },
+                                        { faixa: '49 a 53 anos', ps: 'R$ 999,84', mais: 'R$ 1.162,60' },
+                                        { faixa: '54 a 58 anos', ps: 'R$ 999,84', mais: 'R$ 1.162,60' },
+                                        { faixa: '59 anos ou +', ps: 'R$ 1.315,59', mais: 'R$ 1.529,75' },
+                                    ].map((row, i) => (
+                                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="px-5 py-3 font-medium text-gray-700">{row.faixa}</td>
+                                            <td className="px-5 py-3 text-center font-bold text-[#0f192b]">{row.ps}<span className="text-xs text-gray-400 font-normal">/mês</span></td>
+                                            <td className="px-5 py-3 text-center font-bold text-[#007aff]">{row.mais}<span className="text-xs text-gray-400 font-normal">/mês</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Apartamento */}
+                    <div className="mb-10">
+                        <h3 className="text-lg font-bold text-[#0f192b] mb-4 flex items-center gap-2">
+                            🏨 Apartamento (A)
+                        </h3>
+                        <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-[#0f192b] text-white">
+                                        <th className="px-5 py-3 text-left font-bold">Faixa Etária</th>
+                                        <th className="px-5 py-3 text-center font-bold">Prevent Senior 1025</th>
+                                        <th className="px-5 py-3 text-center font-bold text-[#60a5fa]">Prevent MAIS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[
+                                        { faixa: '0 a 18 anos', ps: 'R$ 907,73', mais: 'R$ 1.055,50' },
+                                        { faixa: '19 a 23 anos', ps: 'R$ 907,73', mais: 'R$ 1.055,50' },
+                                        { faixa: '24 a 28 anos', ps: 'R$ 907,73', mais: 'R$ 1.055,50' },
+                                        { faixa: '29 a 33 anos', ps: 'R$ 907,73', mais: 'R$ 1.055,50' },
+                                        { faixa: '34 a 38 anos', ps: 'R$ 907,73', mais: 'R$ 1.055,50' },
+                                        { faixa: '39 a 43 anos', ps: 'R$ 907,73', mais: 'R$ 1.055,50' },
+                                        { faixa: '44 a 48 anos', ps: 'R$ 1.195,06', mais: 'R$ 1.389,60' },
+                                        { faixa: '49 a 53 anos', ps: 'R$ 1.195,06', mais: 'R$ 1.389,60' },
+                                        { faixa: '54 a 58 anos', ps: 'R$ 1.195,06', mais: 'R$ 1.389,60' },
+                                        { faixa: '59 anos ou +', ps: 'R$ 1.572,45', mais: 'R$ 1.828,43' },
+                                    ].map((row, i) => (
+                                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="px-5 py-3 font-medium text-gray-700">{row.faixa}</td>
+                                            <td className="px-5 py-3 text-center font-bold text-[#0f192b]">{row.ps}<span className="text-xs text-gray-400 font-normal">/mês</span></td>
+                                            <td className="px-5 py-3 text-center font-bold text-[#007aff]">{row.mais}<span className="text-xs text-gray-400 font-normal">/mês</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Diferença entre planos */}
+                    <div className="bg-[#f8faff] rounded-2xl border border-[#007aff]/20 p-6">
+                        <h3 className="font-bold text-[#0f192b] mb-3">Qual a diferença entre os planos?</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            O <strong>Prevent Senior 1025</strong> é focado em São Paulo e oferece plano individual sem reajuste por idade a partir dos 44 anos, com modelo de hospitais temáticos Sancta Maggiore.
+                            Já o <strong>Prevent MAIS</strong> tem cobertura ampliada (SP e Rio de Janeiro), sem reajuste por faixa etária a partir dos 44 anos, rede credenciada expandida e vantagens na portabilidade de carências.
+                            Ambos são <strong>sem coparticipação</strong> e focados no público sênior.
+                        </p>
+                        <p className="text-gray-500 text-xs mt-3">
+                            Taxa de inscrição: <strong className="text-green-600">Isenta</strong> · Segmentação: Ambulatorial e Hospitalar SEM Obstetrícia · Individual
+                        </p>
+                    </div>
+                </div>
+            </section>
+
             {/* ══ FAQ / Perguntas Frequentes ════════════════════════════════════ */}
             <section id="faq" className="py-24 bg-white" aria-label="Perguntas frequentes sobre o Prevent Senior">
                 <div className="container mx-auto px-4 max-w-3xl">
@@ -375,19 +481,39 @@ export default function PreventLandingPage() {
                         {[
                             {
                                 q: 'Qual o preço do plano Prevent Senior em 2026?',
-                                a: 'O plano Prevent Senior Enfermaria começa em R$ 883,53/mês (até 43 anos). Para 44 a 58 anos, R$ 1.162,60/mês. Para 59 anos em diante, R$ 1.529,75/mês. O Apartamento tem valores de R$ 1.055,50 a R$ 1.828,43/mês, dependendo da faixa etária.',
+                                a: 'O Prevent Senior 1025 começa em R$ 759,84/mês (Enfermaria, até 43 anos) e o Prevent MAIS começa em R$ 883,53/mês. Para 44–58 anos, os valores são R$ 999,84 (1025 Enf) e R$ 1.162,60 (MAIS Enf). Para 59 anos ou mais: R$ 1.315,59 (1025 Enf) e R$ 1.529,75 (MAIS Enf). Veja a tabela completa na seção de planos.',
+                            },
+                            {
+                                q: 'Como agendar consulta Prevent Senior?',
+                                a: 'Os agendamentos de consultas podem ser realizados pelo Portal do Beneficiário Prevent Senior ou pelo aplicativo Beneficiário Prevent Senior, disponível na Play Store (Android) ou App Store (iOS).',
+                            },
+                            {
+                                q: 'Qual a taxa de cadastro do plano Prevent Senior?',
+                                a: 'A taxa de inscrição (cadastro) do plano Prevent Senior está isenta. Não há cobrança de taxa de cadastro por contrato.',
+                            },
+                            {
+                                q: 'Quais hospitais atendem o plano Prevent Senior?',
+                                a: 'Os beneficiários têm acesso à rede própria Sancta Maggiore (mais de 15 unidades em SP e Litoral), Núcleos de Medicina Avançada Prevent Senior, Núcleos de Reabilitação, Hospital Jardins, além de laboratórios parceiros como Laboratório A+, CDB e Lavoisier.',
+                            },
+                            {
+                                q: 'Qual é o aplicativo da Prevent Senior?',
+                                a: 'O app oficial da Prevent Senior está disponível para Android e iOS. Por ele você acessa: carteirinha virtual, agendamento de consultas, cancelamentos, rede credenciada, solicitação de segunda via de boleto, envio de documentos médicos e o canal "Fale Conosco".',
+                            },
+                            {
+                                q: 'Como funciona o reembolso da Prevent Senior?',
+                                a: 'A operadora disponibiliza reembolso para consultas realizadas fora da rede credenciada e para alguns procedimentos, conforme a categoria do plano contratado. O pedido é feito diretamente pelo beneficiário no portal ou app da Prevent Senior.',
                             },
                             {
                                 q: 'Como contratar o plano Prevent Senior?',
-                                a: 'Você pode simular sua cotação diretamente nesta página ou entrar em contato pelo WhatsApp. Um especialista entra em contato em até 24 horas para fechar a proposta com as melhores condições.',
+                                a: 'Simule sua cotação diretamente nesta página ou entre em contato pelo WhatsApp. Um especialista entra em contato em até 24 horas para fechar a proposta com as melhores condições.',
                             },
                             {
                                 q: 'O Prevent Senior tem reajuste por idade?',
-                                a: 'Não. A partir dos 50 anos, a Prevent Senior não aplica reajuste por faixa etária. Isso é uma grande diferença em relação a outras operadoras, que podem aumentar o plano em até 300% ao longo da vida.',
+                                a: 'Não. A partir dos 44 anos, os planos Prevent Senior 1025 e Prevent MAIS não aplicam reajuste por faixa etária. Isso é uma grande vantagem em relação a outras operadoras, que podem aumentar o plano em até 300% ao longo da vida.',
                             },
                             {
                                 q: 'Onde fica a rede credenciada Prevent Senior?',
-                                a: 'A rede própria Sancta Maggiore possui mais de 45 unidades em São Paulo, incluindo hospitais em Itaim Bibi, Mooca, Morumbi, Paraíso, Alto da Mooca e Vergueiro, além de clínicas, laboratórios e consultórios.',
+                                a: 'A rede própria Sancta Maggiore cobre São Paulo Capital, ABC Paulista (Santo André, São Bernardo do Campo) e Litoral (Santos). Hospitais, Prontos Atendimentos e Núcleos de Medicina Avançada. Confira a página de Rede Credenciada para a lista completa.',
                             },
                         ].map((item, i) => (
                             <details key={i} className="group bg-gray-50 rounded-2xl border border-gray-100 p-6 cursor-pointer">
