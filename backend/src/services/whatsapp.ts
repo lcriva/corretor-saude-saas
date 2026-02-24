@@ -1,6 +1,7 @@
 import makeWASocket, {
     useMultiFileAuthState,
-    DisconnectReason
+    DisconnectReason,
+    fetchLatestBaileysVersion
 } from '@whiskeysockets/baileys';
 
 import pino from 'pino';
@@ -47,9 +48,14 @@ class WhatsAppService {
             const authPath = process.env.WHATSAPP_AUTH_DIR || 'auth_info';
             const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
+            // Buscar a versão mais recente do protocolo WhatsApp para evitar erro 405
+            const { version, isLatest } = await fetchLatestBaileysVersion();
+            console.log(`📱 Usando protocolo WhatsApp versão ${version.join('.')} (mais recente: ${isLatest})`);
+
             this.sock = makeWASocket({
                 auth: state,
                 logger: pino({ level: 'silent' }),
+                version,
             });
 
             this.sock.ev.on('creds.update', saveCreds);
@@ -82,15 +88,21 @@ class WhatsAppService {
                 if (connection === 'close') {
                     this.isConnecting = false;
                     const statusCode = lastDisconnect?.error?.output?.statusCode;
-                    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+                    // 405 = protocolo rejeitado / sessão inválida → NÃO reconectar (precisa novo QR)
+                    const isFatal = statusCode === 405 || statusCode === DisconnectReason.loggedOut;
+                    const shouldReconnect = !isFatal;
 
                     console.log('❌ Conexão fechada.');
                     console.log('📊 Status Code:', statusCode);
                     console.log('🔄 Reconectando?', shouldReconnect);
 
-                    if (shouldReconnect) {
-                        console.log('⏳ Tentando reconectar em 3 segundos...\n');
-                        setTimeout(() => this.conectar(userId), 3000);
+                    if (statusCode === 405) {
+                        console.log('⚠️ Protocolo WhatsApp rejeitado (405). Apague a sessão e gere novo QR Code.');
+                        this.qrCodeData = '';
+                    } else if (shouldReconnect) {
+                        console.log('⏳ Tentando reconectar em 5 segundos...\n');
+                        setTimeout(() => this.conectar(userId), 5000);
                     } else {
                         console.log('⚠️  WhatsApp deslogado. Execute o comando novamente para gerar novo QR Code.\n');
                     }
