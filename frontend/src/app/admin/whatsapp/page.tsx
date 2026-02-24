@@ -29,8 +29,8 @@ export default function WhatsAppPage() {
             const response = await whatsapp.getStatus();
             setIsConnected(response.data.connected);
             setQrCode(response.data.qrCode);
-        } catch (error) {
-            console.error('Erro ao buscar status do WhatsApp:', error);
+        } catch (error: any) {
+            console.error('Erro ao buscar status do WhatsApp:', error?.response?.status, error?.message);
         } finally {
             setIsLoading(false);
         }
@@ -43,13 +43,28 @@ export default function WhatsAppPage() {
         return () => clearInterval(interval);
     }, []);
 
+    // Auto-conectar ao abrir a página se não estiver conectado
+    useEffect(() => {
+        if (!isLoading && !isConnected && !qrCode) {
+            handleConnect();
+        }
+    }, [isLoading]);
+
     const handleConnect = async () => {
+        if (isActionLoading) return;
         setIsActionLoading(true);
         try {
             await whatsapp.connect();
             await fetchStatus();
-        } catch (error) {
-            alert('Erro ao iniciar conexão. Tente novamente.');
+        } catch (error: any) {
+            const status = error?.response?.status;
+            if (status === 400) {
+                // Já conectado — atualizar status
+                await fetchStatus();
+            } else {
+                console.error('Erro ao iniciar conexão:', status, error?.message);
+                alert(`Erro ao iniciar conexão (${status ?? 'sem resposta'}). Verifique o servidor.`);
+            }
         } finally {
             setIsActionLoading(false);
         }
