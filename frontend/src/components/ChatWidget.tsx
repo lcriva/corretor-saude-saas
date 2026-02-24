@@ -10,31 +10,32 @@ interface Message {
     content: string;
 }
 
+// Tipo ChatButton sincronizado com o backend
+interface ChatButton {
+    label: string;
+    url?: string;
+}
+
 export function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
-    const [buttons, setButtons] = useState<string[]>([]);
+    const [buttons, setButtons] = useState<ChatButton[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [leadId, setLeadId] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Scroll to bottom sempre que novas mensagens chegam
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages, buttons, isOpen]);
+    useEffect(() => { scrollToBottom(); }, [messages, buttons, isOpen]);
 
-    // Ouvir eventos externos de abertura
     useEffect(() => {
         const handleOpenChat = () => setIsOpen(true);
         window.addEventListener('open-chat', handleOpenChat);
         return () => window.removeEventListener('open-chat', handleOpenChat);
     }, []);
 
-    // Ao abrir o chat, iniciar sessão
     useEffect(() => {
         if (isOpen && messages.length === 0) {
             trackPixelEvent('Contact', { type: 'ChatOpened' });
@@ -60,7 +61,6 @@ export function ChatWidget() {
         }
     };
 
-    // Enviar mensagem (texto digitado ou botão clicado)
     const sendMessage = async (text: string) => {
         if (!text.trim() || isLoading) return;
 
@@ -68,7 +68,6 @@ export function ChatWidget() {
             trackPixelEvent('Lead', { content_name: 'Chat Lead Start' });
         }
 
-        // Limpar botões ao enviar qualquer mensagem
         setButtons([]);
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: text }]);
@@ -92,17 +91,22 @@ export function ChatWidget() {
             }
         } catch (error) {
             console.error('Erro ao enviar mensagem:', error);
-            setMessages(prev => [
-                ...prev,
-                { role: 'assistant', content: 'Desculpe, tive um erro de conexão. Tente novamente.' },
-            ]);
+            setMessages(prev => [...prev, { role: 'assistant', content: 'Desculpe, tive um erro de conexão. Tente novamente.' }]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Ao clicar num botão: se tiver URL abre em nova aba, senão envia como mensagem
+    const handleButton = (button: ChatButton) => {
+        if (button.url) {
+            window.open(button.url, '_blank', 'noopener,noreferrer');
+        } else {
+            sendMessage(button.label);
+        }
+    };
+
     const handleSend = () => sendMessage(input);
-    const handleButton = (label: string) => sendMessage(label);
 
     return (
         <>
@@ -168,9 +172,10 @@ export function ChatWidget() {
                                     <button
                                         key={i}
                                         onClick={() => handleButton(btn)}
-                                        className="bg-white border-2 border-[#007aff] text-[#007aff] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#007aff] hover:text-white transition-all duration-150 shadow-sm"
+                                        className="bg-white border-2 border-[#007aff] text-[#007aff] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#007aff] hover:text-white transition-all duration-150 shadow-sm flex items-center gap-1"
                                     >
-                                        {btn}
+                                        {btn.url && <span className="text-xs">↗</span>}
+                                        {btn.label}
                                     </button>
                                 ))}
                             </div>

@@ -292,7 +292,7 @@ class WhatsAppService {
             if (chatResponse.buttons && chatResponse.buttons.length > 0) {
                 mensagemFinal += '\n\n';
                 chatResponse.buttons.forEach((btn, i) => {
-                    mensagemFinal += `*${i + 1} -* ${btn}\n`;
+                    mensagemFinal += `*${i + 1} -* ${btn.label}\n`;
                 });
                 mensagemFinal = mensagemFinal.trimEnd();
             }
