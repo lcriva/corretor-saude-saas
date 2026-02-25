@@ -622,7 +622,7 @@ export default function PreventLandingPage() {
                             },
                             {
                                 q: 'Onde fica a rede credenciada Prevent Senior?',
-                                a: 'A rede própria Sancta Maggiore cobre São Paulo Capital, ABC Paulista (Santo André, São Bernardo do Campo) e Litoral (Santos). Hospitais, Prontos Atendimentos e Núcleos de Medicina Avançada. Confira a página de Rede Credenciada para a lista completa.',
+                                a: 'A rede própria Sancta Maggiore cobre São Paulo Capital, ABC Paulista (Santo André, São Bernardo do Campo) e Litoral (Santos). Inclui hospitais Sancta Maggiore, prontos-atendimentos e clínicas especializadas. Fale com um corretor para receber a lista completa e atualizada agora pelo WhatsApp.',
                             },
                         ].map((item, i) => (
                             <details key={i} className="group bg-gray-50 rounded-2xl border border-gray-100 p-6 cursor-pointer">

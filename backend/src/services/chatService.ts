@@ -15,6 +15,7 @@ export interface ChatResponse {
 // ===== STEPS DA MÁQUINA DE ESTADOS =====
 export enum ChatStep {
     BOAS_VINDAS = 'BOAS_VINDAS',
+    CHECKLIST = 'CHECKLIST',
     CONHECER_PLANO = 'CONHECER_PLANO',
     SIMULACAO = 'SIMULACAO',
     DADOS_TITULAR = 'DADOS_TITULAR',
@@ -110,15 +111,35 @@ export class ChatService {
 
             // ─── BOAS-VINDAS ──────────────────────────────────────────────────
             case ChatStep.BOAS_VINDAS: {
+                session.step = ChatStep.CHECKLIST;
+                return {
+                    text:
+                        'Olá! 👋 Seja bem-vindo à nossa simulação inteligente.\n\n' +
+                        'Antes de falarmos com nossos especialistas, preparamos um breve *Checklist* para você conhecer os diferenciais da Prevent Senior.\n\n' +
+                        'Podemos prosseguir?',
+                    buttons: [btn('Ver Checklist')],
+                };
+            }
+
+            // ─── CHECKLIST INICIAL ────────────────────────────────────────────
+            case ChatStep.CHECKLIST: {
                 session.step = ChatStep.SIMULACAO;
                 return {
                     text:
-                        'Olá! 👋\n\n' +
-                        'Sou a *MarIA*, especialista digital da Prevent Senior.\n\n' +
-                        '🏥 Mais de 3.000 pessoas já fizeram a simulação aqui!\n\n' +
-                        'Posso calcular o valor do seu plano de saúde em menos de 30 segundos.\n\n' +
-                        'O que deseja fazer?',
-                    buttons: [btn('Simular plano'), btn('Falar com especialista'), btn('Conhecer o plano')],
+                        '📋 *Checklist Prevent Senior — O que você precisa saber*\n\n' +
+                        'A *Prevent Senior* é a operadora pioneira e especialista no público *40 anos+*. Nossa estrutura foi projetada para oferecer conforto, modernidade e uma experiência única em saúde.\n\n' +
+                        '📍 *Onde estamos:* São Paulo, Baixada Santista e Rio de Janeiro.\n\n' +
+                        '🛡 *Cobertura:* Padrão ROL ANS (Internações, cirurgias, consultas, exames laboratoriais, terapias e coleta domiciliar).\n\n' +
+                        '⏳ *Carências Padrão:*\n' +
+                        '• *24h:* Urgência e Emergência\n' +
+                        '• *30 dias:* Consultas e exames simples\n' +
+                        '• *180 dias:* Internações e cirurgias\n' +
+                        '• *24 meses:* Doenças pré-existentes\n\n' +
+                        '🔄 *Portabilidade:* Se você já tem plano, podemos reduzir ou isentar suas carências!\n\n' +
+                        '🚫 *Sem Fidelidade:* Você tem liberdade total.\n\n' +
+                        '📲 *Tecnologia:* App exclusivo para carteirinha, rede e agendamentos.\n\n' +
+                        'Deseja simular os valores agora ou falar direto com um especialista?',
+                    buttons: [btn('Simular plano'), btn('Falar com especialista')],
                 };
             }
 
