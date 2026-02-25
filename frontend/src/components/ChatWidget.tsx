@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { trackPixelEvent } from '@/components/MetaPixel';
+import { trackGoogleAdConversion } from '@/components/GoogleTag';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -51,6 +52,7 @@ export function ChatWidget() {
     useEffect(() => {
         if (isOpen && messages.length === 0) {
             trackPixelEvent('Contact', { type: 'ChatOpened' });
+            trackGoogleAdConversion('ChatOpened');
             startSession();
         }
     }, [isOpen]);
@@ -78,6 +80,7 @@ export function ChatWidget() {
 
         if (messages.length <= 1) {
             trackPixelEvent('Lead', { content_name: 'Chat Lead Start' });
+            trackGoogleAdConversion('LeadStart');
         }
 
         setButtons([]);

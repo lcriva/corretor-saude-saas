@@ -2,10 +2,12 @@
 
 import { Phone, MessageCircle } from 'lucide-react';
 import { trackPixelEvent } from '@/components/MetaPixel';
+import { trackGoogleAdConversion } from '@/components/GoogleTag';
 
 export function HeroButtons() {
     const sendMessage = () => {
         trackPixelEvent('Contact', { type: 'WhatsApp Button Click' });
+        trackGoogleAdConversion('WhatsAppClick');
         const msg = 'Olá! Gostaria de uma cotação do Prevent Senior.';
         window.open(`https://wa.me/5511967609811?text=${encodeURIComponent(msg)}`, '_blank');
     };
