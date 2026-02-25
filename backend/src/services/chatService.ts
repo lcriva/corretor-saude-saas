@@ -88,6 +88,18 @@ export class ChatService {
         }
     }
 
+    private isTelefoneValido(telefone: string): boolean {
+        if (!telefone) return false;
+        // Se começar com web-, é temporário do site
+        if (telefone.startsWith('web-')) return false;
+        // Números mascarados do WA (IDs longos sem formato de telefone)
+        if (telefone.length > 15 && !telefone.includes('(')) return false;
+        // Removendo caracteres não numéricos para verificar tamanho
+        const apenasNumeros = telefone.replace(/\D/g, '');
+        // Um telefone brasileiro válido tem 10 ou 11 dígitos (fora o 55)
+        return apenasNumeros.length >= 10 && apenasNumeros.length <= 13;
+    }
+
     private async handleStep(session: ChatSession, messageText: string): Promise<ChatResponse> {
         const text = messageText.trim().toLowerCase();
 
@@ -289,7 +301,8 @@ export class ChatService {
                 await this.updateLead(session.leadId, { nome });
 
                 const lead = await prisma.lead.findUnique({ where: { id: session.leadId } });
-                const needsPhone = lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-');
+                const phoneInvalido = lead ? !this.isTelefoneValido(lead.telefone) : true;
+                const needsPhone = phoneInvalido || (lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-'));
 
                 if (needsPhone) {
                     session.step = ChatStep.CAPTURA_TELEFONE;
