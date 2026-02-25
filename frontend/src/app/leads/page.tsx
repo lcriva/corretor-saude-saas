@@ -8,7 +8,7 @@ import { leads } from '@/lib/api';
 import {
     Users, Plus, Search, Phone, Mail, MapPin,
     Calendar, DollarSign, Edit, Trash2, X,
-    Loader2, LogOut, Home
+    Loader2, LogOut, Home, Globe, MessageSquare, UserPlus, Clock
 } from 'lucide-react';
 
 export default function LeadsPage() {
@@ -269,7 +269,9 @@ export default function LeadsPage() {
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Lead</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Contato</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Localização</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Origem</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Criado em</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Plano / Valor</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Ações</th>
                                     </tr>
@@ -311,6 +313,24 @@ export default function LeadsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
+                                                {lead.origem === 'whatsapp' ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                        <MessageSquare className="w-3 h-3" />
+                                                        WhatsApp
+                                                    </span>
+                                                ) : lead.origem === 'web' ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                                        <Globe className="w-3 h-3" />
+                                                        Landing Page
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                        <UserPlus className="w-3 h-3" />
+                                                        Manual
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 <select
                                                     value={lead.status}
                                                     onChange={(e) => updateStatusMutation.mutate({ id: lead.id, status: e.target.value })}
@@ -320,6 +340,18 @@ export default function LeadsPage() {
                                                         <option key={value} value={value}>{label as string}</option>
                                                     ))}
                                                 </select>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+                                                    <Clock className="w-4 h-4" />
+                                                    {new Date(lead.criadoEm).toLocaleString('pt-BR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    }).replace(',', ' às')}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
