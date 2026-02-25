@@ -438,7 +438,7 @@ export class ChatService {
 
     // ===== CRUD =====
 
-    async createLead(userId: string, origem: string = 'web'): Promise<string> {
+    async createLead(userId: string, origem: string = 'landing_page'): Promise<string> {
         const lead = await prisma.lead.create({
             data: { userId, origem, telefone: 'web-' + Date.now(), nome: 'Visitante Site', status: 'novo' },
         });

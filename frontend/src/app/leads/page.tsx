@@ -318,7 +318,7 @@ export default function LeadsPage() {
                                                         <MessageSquare className="w-3 h-3" />
                                                         WhatsApp
                                                     </span>
-                                                ) : lead.origem === 'web' ? (
+                                                ) : ['landing_page', 'web', 'site_chat'].includes(lead.origem) ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
                                                         <Globe className="w-3 h-3" />
                                                         Landing Page

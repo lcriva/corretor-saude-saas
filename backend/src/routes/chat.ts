@@ -30,7 +30,7 @@ router.post('/start', async (req, res) => {
             return res.status(500).json({ error: 'Nenhum corretor configurado no sistema.' });
         }
 
-        const leadId = await chatService.createLead(broker.id, 'site_chat');
+        const leadId = await chatService.createLead(broker.id, 'landing_page');
         const response = await chatService.processUserMessage(leadId, '');
 
         res.json({ leadId, message: response.text, buttons: response.buttons ?? [] });
