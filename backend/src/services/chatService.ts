@@ -312,8 +312,7 @@ export class ChatService {
                 // Ou se for Web e ainda tiver o prefixo "web-"
                 let needsPhone = false;
                 if (lead?.origem === 'whatsapp') {
-                    // No WhatsApp, só pedimos se o telefone atual for comprovadamente inválido (ex: ID mascarado de 14 dígitos)
-                    needsPhone = phoneInvalido;
+                    needsPhone = false; // NUNCA pergunta o telefone no WhatsApp, conforme pedido do usuário
                 } else {
                     needsPhone = phoneInvalido || lead?.telefone.startsWith('web-') || false;
                 }
