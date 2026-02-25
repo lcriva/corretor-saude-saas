@@ -302,7 +302,17 @@ export class ChatService {
 
                 const lead = await prisma.lead.findUnique({ where: { id: session.leadId } });
                 const phoneInvalido = lead ? !this.isTelefoneValido(lead.telefone) : true;
-                const needsPhone = phoneInvalido || (lead?.origem !== 'whatsapp' && lead?.telefone.startsWith('web-'));
+
+                // Só marcamos como "precisa de telefone" se:
+                // 1. O número atual for comprovadamente inválido (web- ou ID mascarado)
+                // 2. E a origem NÃO for WhatsApp (pois no WhatsApp tentaremos pegar o realJid automaticamente)
+                // Ou se for Web e ainda tiver o prefixo "web-"
+                let needsPhone = false;
+                if (lead?.origem === 'whatsapp') {
+                    needsPhone = phoneInvalido; // No WhatsApp, só pede se o ID realmente não servir como telefone
+                } else {
+                    needsPhone = phoneInvalido || lead?.telefone.startsWith('web-') || false;
+                }
 
                 if (needsPhone) {
                     session.step = ChatStep.CAPTURA_TELEFONE;

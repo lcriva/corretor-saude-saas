@@ -100,6 +100,17 @@ class WhatsAppService {
         const remoteJid = message.key.remoteJid;
         if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') return;
 
+        // Tentar extrair o número real se o JID for mascarado (@lid)
+        let realJid = remoteJid;
+        if (remoteJid.endsWith('@lid')) {
+            // Em alguns casos de anúncio, o número real pode vir no participant ou no contextInfo
+            const participant = message.key.participant || message.participant || message.message?.contextInfo?.participant;
+            if (participant && participant.endsWith('@s.whatsapp.net')) {
+                realJid = participant;
+                console.log(`   💡 ID Mascarado (@lid) detectado. Número real extraído: ${realJid}`);
+            }
+        }
+
         const messageText = message.message?.conversation ||
             message.message?.extendedTextMessage?.text ||
             message.message?.imageMessage?.caption ||
@@ -115,7 +126,7 @@ class WhatsAppService {
         // ── 1. RECUPERAÇÃO DE SESSÃO / LEAD (IMEDIATA) ─────────────────────
         let conversation = conversations.get(remoteJid);
         if (!conversation) {
-            const leadAtivoId = await this.findActiveLeadId(remoteJid);
+            const leadAtivoId = await this.findActiveLeadId(realJid);
             if (leadAtivoId) {
                 const leadDados = await prisma.lead.findUnique({ where: { id: leadAtivoId } });
                 if (leadDados?.lastButtons && Array.isArray(leadDados.lastButtons)) {
@@ -165,7 +176,7 @@ class WhatsAppService {
                 return;
             }
 
-            const leadId = await this.getOrCreateLead(remoteJid, userId);
+            const leadId = await this.getOrCreateLead(realJid, userId);
             if (!leadId) return;
 
             conversation = { userId, leadId, lastInteraction: Date.now(), reminded: false };
@@ -246,7 +257,9 @@ class WhatsAppService {
     }
 
     private async getOrCreateLead(remoteJid: string, userId?: string): Promise<string | undefined> {
-        const telefoneRaw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
+        const telefoneRaw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '').replace('@s.whatsapp.net', '');
+
+        // Se temos um realJid passado, ele tem prioridade
         const formatarTelefone = (raw: string): string => {
             const digits = raw.startsWith('55') ? raw.slice(2) : raw;
             if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
