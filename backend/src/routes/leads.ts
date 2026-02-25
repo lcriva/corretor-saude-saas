@@ -1,6 +1,7 @@
 import express from 'express';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
+import { isAdmin } from '../utils/adminUtils';
 
 const router = express.Router();
 
@@ -11,7 +12,11 @@ router.get('/', async (req, res) => {
     try {
         const { status, search } = req.query;
 
-        const where: any = { userId: req.userId };
+        // Buscar usuário para checar se é admin
+        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const userIsAdmin = isAdmin(user?.email);
+
+        const where: any = userIsAdmin ? {} : { userId: req.userId };
 
         if (status && status !== 'todos') {
             where.status = status;
@@ -47,11 +52,16 @@ router.get('/', async (req, res) => {
 // Buscar lead específico
 router.get('/:id', async (req, res) => {
     try {
+        // Buscar usuário para checar se é admin
+        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const userIsAdmin = isAdmin(user?.email);
+
+        const where: any = userIsAdmin
+            ? { id: req.params.id }
+            : { id: req.params.id, userId: req.userId };
+
         const lead = await prisma.lead.findFirst({
-            where: {
-                id: req.params.id,
-                userId: req.userId
-            },
+            where,
             include: {
                 interacoes: {
                     orderBy: { criadoEm: 'desc' }
@@ -119,11 +129,16 @@ router.put('/:id', async (req, res) => {
     try {
         const { nome, telefone, email, idade, cidade, estado, dependentes, valorEstimado, valorPlano, planoDesejado, observacoes } = req.body;
 
+        // Buscar usuário para checar se é admin
+        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const userIsAdmin = isAdmin(user?.email);
+
+        const where: any = userIsAdmin
+            ? { id: req.params.id }
+            : { id: req.params.id, userId: req.userId };
+
         const lead = await prisma.lead.updateMany({
-            where: {
-                id: req.params.id,
-                userId: req.userId
-            },
+            where,
             data: {
                 nome,
                 telefone,
@@ -168,11 +183,16 @@ router.patch('/:id/status', async (req, res) => {
             return res.status(400).json({ error: 'Status inválido' });
         }
 
+        // Buscar usuário para checar se é admin
+        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const userIsAdmin = isAdmin(user?.email);
+
+        const where: any = userIsAdmin
+            ? { id: req.params.id }
+            : { id: req.params.id, userId: req.userId };
+
         const lead = await prisma.lead.updateMany({
-            where: {
-                id: req.params.id,
-                userId: req.userId
-            },
+            where,
             data: { status }
         });
 
@@ -208,11 +228,16 @@ router.post('/:id/interacoes', async (req, res) => {
     try {
         const { tipo, descricao } = req.body;
 
+        // Buscar usuário para checar se é admin
+        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const userIsAdmin = isAdmin(user?.email);
+
+        const where: any = userIsAdmin
+            ? { id: req.params.id }
+            : { id: req.params.id, userId: req.userId };
+
         const lead = await prisma.lead.findFirst({
-            where: {
-                id: req.params.id,
-                userId: req.userId
-            }
+            where,
         });
 
         if (!lead) {
@@ -237,11 +262,16 @@ router.post('/:id/interacoes', async (req, res) => {
 // Deletar lead
 router.delete('/:id', async (req, res) => {
     try {
+        // Buscar usuário para checar se é admin
+        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const userIsAdmin = isAdmin(user?.email);
+
+        const where: any = userIsAdmin
+            ? { id: req.params.id }
+            : { id: req.params.id, userId: req.userId };
+
         const lead = await prisma.lead.deleteMany({
-            where: {
-                id: req.params.id,
-                userId: req.userId
-            }
+            where,
         });
 
         if (lead.count === 0) {

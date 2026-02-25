@@ -6,19 +6,15 @@ const router = express.Router();
 
 // Pegar o corretor padrão para atribuir o lead
 async function getDefaultBroker() {
+    // 1. Tenta o administrador principal
     const primary = await prisma.user.findFirst({ where: { email: 'lcriva@gmail.com' } });
     if (primary) return primary;
 
-    const thiago = await prisma.user.findFirst({
-        where: {
-            OR: [
-                { email: { contains: 'thiago', mode: 'insensitive' } },
-                { nome: { contains: 'Thiago', mode: 'insensitive' } },
-            ],
-        },
-    });
+    // 2. Tenta o Thiago (Administrador/Corretor parceiro)
+    const thiago = await prisma.user.findFirst({ where: { email: 'thiagonogueira29@outlook.com' } });
     if (thiago) return thiago;
 
+    // 3. Qualquer outro usuário cadastrado
     return await prisma.user.findFirst();
 }
 
