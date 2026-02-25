@@ -283,11 +283,22 @@ class WhatsAppService {
     }
 
     private async findActiveLeadId(remoteJid: string): Promise<string | null> {
-        const telefone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
+        const raw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
+        // Gera também o formato formatado para encontrar leads já migrados
+        const digits = raw.startsWith('55') ? raw.slice(2) : raw;
+        const formatted = digits.length === 11
+            ? `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+            : digits.length === 10
+                ? `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+                : raw;
+
         try {
             const lead = await prisma.lead.findFirst({
                 where: {
-                    telefone: telefone,
+                    OR: [
+                        { telefone: raw },
+                        { telefone: formatted },
+                    ],
                     status: { not: 'finalizado' }
                 },
                 orderBy: { criadoEm: 'desc' }
@@ -341,13 +352,30 @@ class WhatsAppService {
     }
 
     private async getOrCreateLead(remoteJid: string, userId?: string): Promise<string | undefined> {
-        const telefone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
+        const telefoneRaw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
+
+        // Formatar telefone para exibição legível: 5511999999999 → (11) 99999-9999
+        const formatarTelefone = (raw: string): string => {
+            // Remove código do Brasil se presente (55)
+            const digits = raw.startsWith('55') ? raw.slice(2) : raw;
+            if (digits.length === 11) {
+                return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+            } else if (digits.length === 10) {
+                return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+            }
+            return raw; // fallback: mantém original
+        };
+
+        const telefone = formatarTelefone(telefoneRaw);
 
         try {
-            // Tentar encontrar lead em andamento (não finalizado)
+            // Tentar encontrar lead em andamento (não finalizado) — busca tanto pelo raw quanto pelo formatado
             const leadExistente = await prisma.lead.findFirst({
                 where: {
-                    telefone: telefone,
+                    OR: [
+                        { telefone: telefone },
+                        { telefone: telefoneRaw },
+                    ],
                     status: { not: 'finalizado' }
                 },
                 orderBy: { criadoEm: 'desc' }
@@ -355,6 +383,13 @@ class WhatsAppService {
 
             if (leadExistente) {
                 console.log(`📝 Retomando lead existente: ${leadExistente.id}`);
+                // Atualizar telefone para formato legível se ainda estiver no formato bruto
+                if (leadExistente.telefone === telefoneRaw) {
+                    await prisma.lead.update({
+                        where: { id: leadExistente.id },
+                        data: { telefone }
+                    });
+                }
                 return leadExistente.id;
             }
 
@@ -376,14 +411,15 @@ class WhatsAppService {
 
             const novoLead = await prisma.lead.create({
                 data: {
-                    telefone,
+                    telefone,           // formatado: (11) 99999-9999
+                    nome: `WhatsApp ${telefone}`, // placeholder até usuário informar o nome
                     userId: corretor.id,
                     status: 'novo',
                     origem: 'whatsapp',
                     percentualConclusao: 10 // Começa com 10% (contato iniciado)
                 }
             });
-            console.log(`📝 Novo lead criado: ${novoLead.id}`);
+            console.log(`📝 Novo lead criado: ${novoLead.id} | Tel: ${telefone}`);
 
             // Criar interação inicial
             await prisma.interacao.create({
