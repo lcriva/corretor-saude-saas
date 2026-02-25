@@ -90,12 +90,15 @@ export class ChatService {
 
     private isTelefoneValido(telefone: string): boolean {
         if (!telefone) return false;
-        // Se começar com web-, é temporário do site
+        // Se começar com web-, é vindo do site sem cadastro
         if (telefone.startsWith('web-')) return false;
-        // Números mascarados do WA (IDs longos sem formato de telefone)
-        if (telefone.length > 15 && !telefone.includes('(')) return false;
-        // Removendo caracteres não numéricos para verificar tamanho
+
         const apenasNumeros = telefone.replace(/\D/g, '');
+
+        // IDs mascarados de anúncios costumam ter 14 ou 15 dígitos e não seguem padrão de celular
+        // Um telefone brasileiro com DDI 55 tem no máximo 13 dígitos (55 + DDD + 9 dígitos)
+        if (apenasNumeros.length > 13) return false;
+
         // Um telefone brasileiro válido tem 10 ou 11 dígitos (fora o 55)
         return apenasNumeros.length >= 10 && apenasNumeros.length <= 13;
     }
@@ -309,7 +312,8 @@ export class ChatService {
                 // Ou se for Web e ainda tiver o prefixo "web-"
                 let needsPhone = false;
                 if (lead?.origem === 'whatsapp') {
-                    needsPhone = false; // No WhatsApp nunca pedimos o telefone, usamos o JID (mesmo que mascarado)
+                    // No WhatsApp, só pedimos se o telefone atual for comprovadamente inválido (ex: ID mascarado de 14 dígitos)
+                    needsPhone = phoneInvalido;
                 } else {
                     needsPhone = phoneInvalido || lead?.telefone.startsWith('web-') || false;
                 }
