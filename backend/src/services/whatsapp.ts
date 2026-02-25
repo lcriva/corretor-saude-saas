@@ -26,6 +26,9 @@ const TEMPO_EXPIRACAO = 2 * 60 * 60 * 1000; // 2 horas
 // Estado das conversas em memória
 const conversations = new Map<string, ConversationState>();
 
+// Últimos botões enviados por conversa (para traduzir número → label)
+const lastButtons = new Map<string, string[]>();
+
 class WhatsAppService {
     private sock: any = null;
     private qrCodeData: string = '';
@@ -173,7 +176,17 @@ class WhatsAppService {
             .replace(/[^\w\s]/g, '') // Remove pontuação
             .replace(/\s+/g, ' '); // Espaços duplos
 
-        const msgLimpa = normalizar(messageText);
+        // ── TRADUÇÃO DE NÚMERO → LABEL DE BOTÃO ─────────────────────────────
+        // Se o usuário digitou "1", "2", "3"... e temos botões pendentes, traduzir
+        const botoesAtivos = lastButtons.get(remoteJid) ?? [];
+        const numeroDigitado = parseInt(messageText.trim(), 10);
+        let textoFinal = messageText;
+        if (!isNaN(numeroDigitado) && numeroDigitado >= 1 && numeroDigitado <= botoesAtivos.length) {
+            textoFinal = botoesAtivos[numeroDigitado - 1];
+            console.log(`   🔢 Número ${numeroDigitado} traduzido para: "${textoFinal}"`);
+        }
+
+        const msgLimpa = normalizar(textoFinal);
         console.log(`   Texto normalizado: "${msgLimpa}"`);
 
         // Buscar ou criar estado da conversa
@@ -264,8 +277,8 @@ class WhatsAppService {
             conversation.lastInteraction = Date.now();
             conversation.reminded = false; // Resetar flag se usuário respondeu
 
-            // Processar resposta
-            await this.processarResposta(remoteJid, messageText, conversation);
+            // Processar resposta (com o texto já traduzido se foi um número)
+            await this.processarResposta(remoteJid, textoFinal, conversation);
         }
     }
 
@@ -299,13 +312,22 @@ class WhatsAppService {
             // Usar Máquina de Estados (ChatService)
             const chatResponse = await chatService.processUserMessage(conversation.leadId, textoUsuario);
 
-            // Montar mensagem: texto + botões formatados como lista numerada (WhatsApp não tem botões nativos)
+            // ── Salvar botões para tradução numérica na próxima mensagem ─────
+            if (chatResponse.buttons && chatResponse.buttons.length > 0) {
+                lastButtons.set(remoteJid, chatResponse.buttons.map(b => b.label));
+            } else {
+                lastButtons.delete(remoteJid); // Sem botões = limpar tradução
+            }
+
+            // ── Formatar mensagem com opções visuais ─────────────────────────
             let mensagemFinal = chatResponse.text;
             if (chatResponse.buttons && chatResponse.buttons.length > 0) {
+                const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
                 mensagemFinal += '\n\n';
                 chatResponse.buttons.forEach((btn, i) => {
-                    mensagemFinal += `*${i + 1} -* ${btn.label}\n`;
+                    mensagemFinal += `${emojis[i] ?? `${i + 1}.`} ${btn.label}\n`;
                 });
+                mensagemFinal += '\n_👆 Responda com o número da opção_';
                 mensagemFinal = mensagemFinal.trimEnd();
             }
 
