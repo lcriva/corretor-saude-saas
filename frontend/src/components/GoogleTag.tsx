@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || 'AW-17975389741';
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '';
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-5EJVB7404F';
 
 export const GoogleTag = () => {
     const pathname = usePathname();
