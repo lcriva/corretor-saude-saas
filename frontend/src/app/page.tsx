@@ -121,10 +121,50 @@ export default function PreventLandingPage() {
                         mainEntity: [
                             {
                                 '@type': 'Question',
-                                name: 'Qual o preço do plano Prevent Senior?',
+                                name: 'Qual o preço do plano Prevent Senior em 2026?',
                                 acceptedAnswer: {
                                     '@type': 'Answer',
-                                    text: 'O plano Prevent Senior Enfermaria começa em R$ 883,53 (até 43 anos) e o plano Apartamento começa em R$ 1.055,50. Para beneficiários de 59 anos em diante, os valores são R$ 1.529,75 (Enfermaria) e R$ 1.828,43 (Apartamento). Tabela de preços 2025.',
+                                    text: 'O plano Prevent Senior 1025 Enfermaria começa em R$ 759,84 e o Prevent MAIS Enfermaria começa em R$ 883,53 (tabela 2026). Para beneficiários de 59 anos ou mais, os valores iniciam em R$ 1.315,59. Consulte a tabela de preços oficial nesta página.',
+                                },
+                            },
+                            {
+                                '@type': 'Question',
+                                name: 'Como agendar consulta Prevent Senior?',
+                                acceptedAnswer: {
+                                    '@type': 'Answer',
+                                    text: 'Os agendamentos podem ser feitos pelo aplicativo oficial Beneficiário Prevent Senior ou pelo Portal do Beneficiário no site da operadora. É possível marcar consultas, exames e cancelamentos de forma 100% digital.',
+                                },
+                            },
+                            {
+                                '@type': 'Question',
+                                name: 'Qual a taxa de cadastro do plano Prevent Senior?',
+                                acceptedAnswer: {
+                                    '@type': 'Answer',
+                                    text: 'Atualmente, a taxa de inscrição ou cadastro para contratação do plano Prevent Senior está isenta (R$ 0,00). Você paga apenas a primeira mensalidade para iniciar a cobertura.',
+                                },
+                            },
+                            {
+                                '@type': 'Question',
+                                name: 'Quais hospitais atendem o plano Prevent Senior?',
+                                acceptedAnswer: {
+                                    '@type': 'Answer',
+                                    text: 'O atendimento é feito na rede própria Sancta Maggiore, com hospitais em Itaim Bibi, Mooca, Morumbi, Paraíso e Vergueiro, além de Núcleos de Medicina Avançada e laboratórios parceiros como CDB e Lavoisier.',
+                                },
+                            },
+                            {
+                                '@type': 'Question',
+                                name: 'Qual é o aplicativo da Prevent Senior?',
+                                acceptedAnswer: {
+                                    '@type': 'Answer',
+                                    text: 'O app oficial é o "Beneficiário Prevent Senior", disponível para Android e iPhone. Por ele você acessa a carteirinha digital, rede credenciada, boletos e agendamentos.',
+                                },
+                            },
+                            {
+                                '@type': 'Question',
+                                name: 'Como funciona o reembolso da Prevent Senior?',
+                                acceptedAnswer: {
+                                    '@type': 'Answer',
+                                    text: 'A Prevent Senior oferece reembolso para consultas fora da rede credenciada em determinadas categorias de plano. O pedido deve ser feito via app ou portal com o envio dos recibos médicos.',
                                 },
                             },
                             {
@@ -132,23 +172,23 @@ export default function PreventLandingPage() {
                                 name: 'Como contratar o plano Prevent Senior?',
                                 acceptedAnswer: {
                                     '@type': 'Answer',
-                                    text: 'Para contratar o plano Prevent Senior, você pode simular sua cotação diretamente nesta página, entrar em contato pelo WhatsApp (11) 96760-9811, ou preencher o formulário de atendimento. Um especialista entra em contato em até 24 horas.',
+                                    text: 'A contratação pode ser feita online. Simule sua cotação nesta landing page ou fale diretamente com um corretor autorizado via WhatsApp para receber a proposta digital.',
                                 },
                             },
                             {
                                 '@type': 'Question',
-                                name: 'O Prevent Senior atende em São Paulo e Rio de Janeiro?',
+                                name: 'O Prevent Senior tem reajuste por idade?',
                                 acceptedAnswer: {
                                     '@type': 'Answer',
-                                    text: 'Sim. A rede Prevent Senior possui mais de 45 unidades próprias em São Paulo e está em expansão para o Rio de Janeiro. A rede Sancta Maggiore conta com hospitais em Itaim Bibi, Mooca, Morumbi, Paraíso, Alto da Mooca e Vergueiro.',
+                                    text: 'Exclusividade Prevent Senior: os planos não possuem reajuste por faixa etária a partir dos 50 anos (ou 44 anos em algumas categorias). Isso garante estabilidade financeira para a terceira idade.',
                                 },
                             },
                             {
                                 '@type': 'Question',
-                                name: 'O plano Prevent Senior tem reajuste por idade?',
+                                name: 'Onde fica a rede credenciada Prevent Senior?',
                                 acceptedAnswer: {
                                     '@type': 'Answer',
-                                    text: 'Não. A partir dos 50 anos, o plano Prevent Senior não aplica reajuste por faixa etária, diferente da maioria das operadoras. Isso representa uma grande economia a longo prazo para beneficiários na terceira idade.',
+                                    text: 'A rede própria está concentrada em São Paulo (Capital e ABC) e Litoral (Santos). Inclui hospitais Sancta Maggiore, prontos-atendimentos e clínicas especializadas.',
                                 },
                             },
                         ],
@@ -180,7 +220,7 @@ export default function PreventLandingPage() {
                                 Plano de Saúde <br />
                                 <span className="text-[#007aff]">Prevent Senior</span>
                                 <br />
-                                <span className="text-3xl md:text-4xl font-bold">Tabela de Preços 2025</span>
+                                <span className="text-3xl md:text-4xl font-bold">Tabela de Preços 2026</span>
                             </h1>
                         </div>
                         <p className="text-lg text-gray-200 mb-8 max-w-lg leading-relaxed font-light drop-shadow-md">
@@ -371,7 +411,7 @@ export default function PreventLandingPage() {
                         <p className="text-gray-500 text-sm max-w-2xl mx-auto">
                             Individual · Sem coparticipação · Sem cobrança de taxa de inscrição ·
                             Área de cobertura: São Paulo, São Bernardo do Campo, Santo André e Santos ·
-                            Válido a partir de Outubro de 2025
+                            Válido a partir de Fevereiro de 2026
                         </p>
                     </div>
 
