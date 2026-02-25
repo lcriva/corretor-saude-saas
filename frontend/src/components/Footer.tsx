@@ -17,11 +17,19 @@ export function Footer() {
                     </p>
                 </div>
 
+                <div className="col-span-1 md:col-span-1 text-xs text-gray-500 space-y-2">
+                    <h4 className="font-bold mb-4 text-white text-sm uppercase tracking-wider">Corretora Autorizada</h4>
+                    <p className="font-semibold text-gray-300">Acesso Company Seguros Ltda</p>
+                    <p>CNPJ: 27.351.106/0001-96</p>
+                    <p>SUSEP: 231151484</p>
+                </div>
                 <div>
-                    <h4 className="font-bold mb-6 text-lg">Links Rápidos</h4>
-                    <ul className="space-y-3 text-gray-400 text-sm">
-                        <li><a href="#prevent" className="hover:text-[#007aff] transition-colors">Quem Somos</a></li>
-                        <li><a href="#rede" className="hover:text-[#007aff] transition-colors">Rede de Atendimento</a></li>
+                    <h4 className="font-bold mb-6 text-lg">Cidades Atendidas</h4>
+                    <ul className="space-y-2 text-gray-400 text-xs">
+                        <li>São Paulo / Capital</li>
+                        <li>ABC (Santo André, SBC, SCS)</li>
+                        <li>Litoral (Santos, Praia Grande)</li>
+                        <li>Rio de Janeiro / Niterói</li>
                     </ul>
                 </div>
             </div>

@@ -329,16 +329,85 @@ export default function PreventLandingPage() {
                 </div>
             </section>
 
-            {/* ══ Tabela de Preços ══════════════════════════════════════════════ */}
-            <section id="planos" className="py-24 bg-gray-50" aria-label="Tabela de preços Prevent Senior 2026">
+            {/* ══ Enfermaria vs Apartamento ═════════════════════════════════════ */}
+            <section id="acomodacao" className="py-24 bg-[#f8faff] border-y border-blue-50" aria-label="Diferença entre Enfermaria e Apartamento Prevent Senior">
                 <div className="container mx-auto px-4">
                     <div className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Tabela de Preços 2026</span>
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Decisão Importante</span>
                         <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-4 text-[#0f192b]">
-                            Quanto Custa o Plano Prevent Senior em 2026?
+                            Enfermaria ou Apartamento? <br className="hidden md:block" /> Qual escolher na Prevent Senior?
                         </h2>
                         <p className="text-gray-600">
-                            Dois tipos de plano, com opções de Enfermaria e Apartamento. Sem reajuste por idade após os 50 anos.
+                            Uma das principais dúvidas na hora de consultar a <strong>Tabela de Preços Prevent Senior Janeiro 2026</strong> é o tipo de acomodação. Veja as diferenças:
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+                                <Building className="w-6 h-6 text-[#007aff]" />
+                            </div>
+                            <h3 className="text-xl font-bold mb-4 text-[#0f192b]">Plano Enfermaria (Coletivo)</h3>
+                            <ul className="space-y-3 mb-6">
+                                <li className="flex items-start gap-2 text-sm text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span><strong>Mais Econômico:</strong> Ideal para quem busca a melhor tabela de preços sem abrir mão da qualidade Sancta Maggiore.</span>
+                                </li>
+                                <li className="flex items-start gap-2 text-sm text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span><strong>Compartilhada:</strong> Acomodação em quartos com até 2 ou 3 pessoas do mesmo sexo.</span>
+                                </li>
+                                <li className="flex items-start gap-2 text-sm text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span><strong>Mesmo Atendimento:</strong> A qualidade médica e os hospitais são exatamente os mesmos do plano premium.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-3xl border border-[#007aff]/30 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
+                            <div className="absolute top-0 right-0 bg-[#007aff] text-white text-[10px] font-bold px-3 py-1 uppercase tracking-tighter">
+                                Mais Conforto
+                            </div>
+                            <div className="w-12 h-12 bg-[#007aff]/10 rounded-xl flex items-center justify-center mb-6">
+                                <Users className="w-6 h-6 text-[#007aff]" />
+                            </div>
+                            <h3 className="text-xl font-bold mb-4 text-[#0f192b]">Plano Apartamento (Privativo)</h3>
+                            <ul className="space-y-3 mb-6">
+                                <li className="flex items-start gap-2 text-sm text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span><strong>Privacidade Total:</strong> Quarto e banheiro exclusivos para o paciente durante toda a internação.</span>
+                                </li>
+                                <li className="flex items-start gap-2 text-sm text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span><strong>Acompanhante 24h:</strong> Liberdade total e mais conforto para quem está acompanhando o beneficiário.</span>
+                                </li>
+                                <li className="flex items-start gap-2 text-sm text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span><strong>Experiência Premium:</strong> Ideal para quem prioriza silêncio, intimidade e conveniência.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 text-center">
+                        <p className="text-gray-500 text-sm italic">
+                            Dica: A diferença de preço entre os dois é pequena em relação ao conforto extra que o Apartamento proporciona.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* ══ Tabela de Preços ══════════════════════════════════════════════ */}
+            <section id="planos" className="py-24 bg-white" aria-label="Tabela de preços Prevent Senior Janeiro 2026">
+                <div className="container mx-auto px-4">
+                    <div className="text-center max-w-3xl mx-auto mb-16">
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Oficial e Atualizada</span>
+                        <h2 className="text-3xl md:text-5xl font-extrabold mt-2 mb-4 text-[#0f192b]">
+                            Tabela de Preços Prevent Senior <br /> <span className="text-[#007aff]">Janeiro 2026</span>
+                        </h2>
+                        <p className="text-gray-600 text-lg">
+                            Confira abaixo os valores mensais para São Paulo, ABC e Rio de Janeiro. <br className="hidden md:block" />
+                            <strong>Acesso Company Seguros:</strong> Corretora Autorizada Prevent Senior.
                         </p>
                     </div>
 
@@ -564,6 +633,47 @@ export default function PreventLandingPage() {
                                 <p className="mt-4 text-gray-600 leading-relaxed">{item.a}</p>
                             </details>
                         ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ══ Autoridade e Confiança ════════════════════════════════════════ */}
+            <section className="py-20 bg-[#0f192b] text-white overflow-hidden relative">
+                <div className="container mx-auto px-4 relative z-10">
+                    <div className="max-w-4xl mx-auto bg-white/5 backdrop-blur-sm p-8 md:p-12 rounded-[2rem] border border-white/10 shadow-2xl">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                            <div>
+                                <h2 className="text-3xl font-bold mb-6">Corretora Autorizada <br /><span className="text-[#007aff]">Prevent Senior</span></h2>
+                                <p className="text-gray-400 leading-relaxed mb-8">
+                                    A <strong>Acesso Company Seguros Ltda</strong> é uma corretora especializada e autorizada pela Prevent Senior. Oferecemos suporte completo na contratação, portabilidade de carências e consultoria personalizada para o público Adulto+.
+                                </p>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <ShieldCheck className="w-8 h-8 text-[#007aff]" />
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Registro Profissional</p>
+                                            <p className="font-mono text-sm">SUSEP: 231151484</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <Building className="w-8 h-8 text-[#007aff]" />
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Dados Cadastrais</p>
+                                            <p className="font-mono text-sm leading-tight">CNPJ: 27.351.106/0001-96 <br /> Acesso Company Seguros Ltda</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <div className="absolute -inset-4 bg-[#007aff]/20 blur-3xl rounded-full" />
+                                <div className="relative bg-white/5 p-8 rounded-3xl border border-white/10 text-center">
+                                    <h3 className="text-xl font-bold mb-4">Atendimento Oficial</h3>
+                                    <p className="text-sm text-gray-400 mb-6">Precisa de uma cotação oficial assinada pela corretora?</p>
+                                    <HeroButtons />
+                                    <p className="text-[10px] text-gray-500 mt-6 uppercase tracking-widest">Consultoria 100% Gratuita</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
