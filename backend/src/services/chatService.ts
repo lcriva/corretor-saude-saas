@@ -309,7 +309,7 @@ export class ChatService {
                 // Ou se for Web e ainda tiver o prefixo "web-"
                 let needsPhone = false;
                 if (lead?.origem === 'whatsapp') {
-                    needsPhone = phoneInvalido; // No WhatsApp, só pede se o ID realmente não servir como telefone
+                    needsPhone = false; // No WhatsApp nunca pedimos o telefone, usamos o JID (mesmo que mascarado)
                 } else {
                     needsPhone = phoneInvalido || lead?.telefone.startsWith('web-') || false;
                 }
