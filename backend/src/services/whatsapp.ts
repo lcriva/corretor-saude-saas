@@ -21,9 +21,6 @@ const TEMPO_LEMBRETE = 1 * 60 * 1000; // 1 minuto (para teste)
 const TEMPO_EXPIRACAO = 2 * 60 * 60 * 1000; // 2 horas
 
 // Estado das conversas em memória
-
-
-// Estado das conversas em memória
 const conversations = new Map<string, ConversationState>();
 
 // Últimos botões enviados por conversa (para traduzir número → label)
@@ -36,9 +33,8 @@ class WhatsAppService {
     private monitorInterval: NodeJS.Timeout | null = null;
 
     constructor() {
-        this.startMonitoring(); // Follow-up reativado
+        this.startMonitoring();
     }
-
 
     async conectar(userId?: string) {
         if (this.isConnecting) {
@@ -51,7 +47,6 @@ class WhatsAppService {
             const authPath = process.env.WHATSAPP_AUTH_DIR || 'auth_info';
             const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
-            // Buscar a versão mais recente do protocolo WhatsApp para evitar erro 405
             const { version, isLatest } = await fetchLatestBaileysVersion();
             console.log(`📱 Usando protocolo WhatsApp versão ${version.join('.')} (mais recente: ${isLatest})`);
 
@@ -69,61 +64,24 @@ class WhatsAppService {
                 if (qr) {
                     this.qrCodeData = qr;
                     console.log('\n📱 QR CODE GERADO!');
-                    console.log('═══════════════════════════════════════════');
-                    console.log('Abra o WhatsApp no celular:');
-                    console.log('1. Menu (⋮) → Dispositivos conectados');
-                    console.log('2. Conectar dispositivo');
-                    console.log('3. Escaneie o QR Code abaixo:');
-                    console.log('═══════════════════════════════════════════\n');
-
-                    // Exibir QR Code no terminal
                     qrcode.generate(qr, { small: true });
-
-                    console.log('\n═══════════════════════════════════════════');
-                    console.log('🔒 CONFIGURAÇÕES:');
-                    console.log('   Bot conectado: +55 11 96760-9811');
-                    console.log('   Autorizado: Todos (Restrição removida)');
-                    console.log('   🚫 Ignora mensagens de grupos');
-                    console.log('   📧 Coleta email no final da conversa');
-                    console.log('═══════════════════════════════════════════\n');
                 }
 
                 if (connection === 'close') {
                     this.isConnecting = false;
                     const statusCode = lastDisconnect?.error?.output?.statusCode;
-
-                    // 405 = protocolo rejeitado / sessão inválida → NÃO reconectar (precisa novo QR)
                     const isFatal = statusCode === 405 || statusCode === DisconnectReason.loggedOut;
                     const shouldReconnect = !isFatal;
 
-                    console.log('❌ Conexão fechada.');
-                    console.log('📊 Status Code:', statusCode);
-                    console.log('🔄 Reconectando?', shouldReconnect);
-
-                    if (statusCode === 405) {
-                        console.log('⚠️ Protocolo WhatsApp rejeitado (405). Apague a sessão e gere novo QR Code.');
-                        this.qrCodeData = '';
-                    } else if (shouldReconnect) {
-                        console.log('⏳ Tentando reconectar em 5 segundos...\n');
+                    if (shouldReconnect) {
                         setTimeout(() => this.conectar(userId), 5000);
-                    } else {
-                        console.log('⚠️  WhatsApp deslogado. Execute o comando novamente para gerar novo QR Code.\n');
                     }
                 } else if (connection === 'open') {
                     this.isConnecting = false;
                     console.log('✅ WhatsApp conectado com sucesso!');
-                    console.log('🤖 Bot está pronto para receber mensagens!');
-                    console.log('📞 Número conectado:', this.sock.user?.id);
-                    console.log('🔓 Bot liberado para qualquer número');
-                    console.log('🚫 Mensagens de grupos serão ignoradas');
-                    console.log('📧 Email será coletado no final da conversa');
-                    console.log('═══════════════════════════════════════════\n');
-                } else if (connection === 'connecting') {
-                    console.log('⏳ Conectando ao WhatsApp...\n');
                 }
             });
 
-            // Listener de mensagens
             this.sock.ev.on('messages.upsert', async (m: any) => {
                 await this.handleMessage(m, userId);
             });
@@ -137,154 +95,93 @@ class WhatsAppService {
 
     private async handleMessage(messageUpdate: any, userId?: string) {
         const message = messageUpdate.messages[0];
-
-        // DEBUG: Logar TUDO que chega para entender o formato
-        if (message?.key?.remoteJid) {
-            console.log('🔍 Chegou mensagem de:', message.key.remoteJid);
-        }
-
-        if (!message.message || message.key.fromMe) {
-            return;
-        }
+        if (!message.message || message.key.fromMe) return;
 
         const remoteJid = message.key.remoteJid;
-
-        // ===== OTIMIZAÇÃO: IGNORAR GRUPOS E STATUS IMEDIATAMENTE =====
-        // Não logar nada para economizar processamento e limpar o terminal
-        if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') {
-            return;
-        }
-        // =============================================================
-
-        // ===== RESTRIÇÃO DE PERFORMANCE: APENAS UM NÚMERO =====
-        // REMOVIDO: Bot liberado para todos
-        // ======================================================
-
-        console.log('DEBUG: handleMessage chamado', JSON.stringify(message.key)); // DEBUG
+        if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') return;
 
         const messageText = message.message?.conversation ||
             message.message?.extendedTextMessage?.text ||
             message.message?.imageMessage?.caption ||
             message.message?.videoMessage?.caption || '';
 
-        console.log(`\n📩 [WA v3.0] Mensagem recebida de ${remoteJid}`);
-        console.log(`   Texto original: "${messageText}"`);
+        console.log(`\n📩 [WA] Mensagem de ${remoteJid}: "${messageText}"`);
 
-        // Normalização agressiva para comparação
         const normalizar = (t: string) => t.trim().toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
-            .replace(/[^\w\s]/g, '') // Remove pontuação
-            .replace(/\s+/g, ' '); // Espaços duplos
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^\w\s]/g, '')
+            .replace(/\s+/g, ' ');
 
-        // ── TRADUÇÃO DE NÚMERO → LABEL DE BOTÃO ─────────────────────────────
-        // Se o usuário digitou "1", "2", "3"... e temos botões pendentes, traduzir
+        // ── 1. RECUPERAÇÃO DE SESSÃO / LEAD (IMEDIATA) ─────────────────────
+        let conversation = conversations.get(remoteJid);
+        if (!conversation) {
+            const leadAtivoId = await this.findActiveLeadId(remoteJid);
+            if (leadAtivoId) {
+                const leadDados = await prisma.lead.findUnique({ where: { id: leadAtivoId } });
+                if (leadDados?.lastButtons && Array.isArray(leadDados.lastButtons)) {
+                    lastButtons.set(remoteJid, leadDados.lastButtons as string[]);
+                    console.log(`   🔄 Botões recuperados do banco: [${(leadDados.lastButtons as string[]).join(', ')}]`);
+                }
+                conversation = { userId, leadId: leadAtivoId, lastInteraction: Date.now(), reminded: false };
+                conversations.set(remoteJid, conversation);
+            }
+        }
+
+        // ── 2. TRADUÇÃO DE NÚMERO → LABEL DE BOTÃO ─────────────────────────────
         const botoesAtivos = lastButtons.get(remoteJid) ?? [];
-        const numeroDigitado = parseInt(messageText.trim(), 10);
+        const textoLimpo = messageText.trim().replace(/[️⃣.\)\-]/g, '').trim();
+        const numeroDigitado = parseInt(textoLimpo, 10);
         let textoFinal = messageText;
-        if (!isNaN(numeroDigitado) && numeroDigitado >= 1 && numeroDigitado <= botoesAtivos.length) {
+
+        if (botoesAtivos.length > 0 && !isNaN(numeroDigitado) && numeroDigitado >= 1 && numeroDigitado <= botoesAtivos.length && textoLimpo === String(numeroDigitado)) {
             textoFinal = botoesAtivos[numeroDigitado - 1];
             console.log(`   🔢 Número ${numeroDigitado} traduzido para: "${textoFinal}"`);
         }
 
         const msgLimpa = normalizar(textoFinal);
-        console.log(`   Texto normalizado: "${msgLimpa}"`);
 
-        // Buscar ou criar estado da conversa
-        let conversation = conversations.get(remoteJid);
-
+        // ── 3. LÓGICA DE GATILHOS E NOVO LEAD ──────────────────────────────────
         if (!conversation) {
-            // TENTATIVA DE RECUPERAÇÃO: Verificar se já existe lead ativo no banco
-            const leadAtivoId = await this.findActiveLeadId(remoteJid);
+            const gatilhos = [
+                'oi quero um plano de saude',
+                'ola gostaria de uma cotacao do prevent senior',
+                'quero um plano de saude',
+                'cotacao prevent senior'
+            ];
 
-            if (leadAtivoId) {
-                console.log(`🔄 Sessão recuperada do banco para lead: ${leadAtivoId}`);
+            const ehGatilho = gatilhos.some(g => msgLimpa.includes(g));
 
-                // Buscar dados atuais do lead para contexto (opcional, mas bom para debug)
-                const leadDados = await prisma.lead.findUnique({ where: { id: leadAtivoId } });
-
-                conversation = {
-                    userId,
-                    leadId: leadAtivoId,
-                    lastInteraction: Date.now(),
-                    reminded: false
-                };
-                conversations.set(remoteJid, conversation);
-
-            } else {
-                const gatilhos = [
-                    'oi quero um plano de saude',
-                    'ola gostaria de uma cotacao do prevent senior',
-                    'quero um plano de saude',
-                    'cotacao prevent senior'
-                ];
-
-                const ehGatilho = gatilhos.some(g => msgLimpa.includes(g));
-                console.log(`   [WA v3.0] Verificação de Gatilho: ${ehGatilho ? '✅ SIM' : '❌ NÃO'}`);
-
-                if (ehGatilho) {
-                    console.log(`   [WA v3.0] 🚀 Gatilho detectado! Iniciando novo lead.`);
+            if (msgLimpa.includes('não quero continuar') || msgLimpa.includes('cancelar') || msgLimpa.includes('parar')) {
+                await this.enviarMensagem(remoteJid, "Atendimento encerrado. Se precisar, é só chamar! 👋");
+                const activeLeadId = await this.findActiveLeadId(remoteJid);
+                if (activeLeadId) {
+                    await prisma.lead.update({ where: { id: activeLeadId }, data: { status: 'perdido' } });
                 }
-
-                // Check msg recusas
-                if (msgLimpa.includes('não quero continuar') || msgLimpa.includes('cancelar') || msgLimpa.includes('parar')) {
-                    console.log(`🚫 Usuário pediu para parar: ${remoteJid}`);
-                    await this.enviarMensagem(remoteJid, "Tudo bem, atendimento encerrado. Se mudar de ideia, é só chamar! 👋");
-
-                    // Se tiver lead ativo, marca como perdido
-                    const activeLeadId = await this.findActiveLeadId(remoteJid);
-                    if (activeLeadId) {
-                        await prisma.lead.update({
-                            where: { id: activeLeadId },
-                            data: { status: 'perdido' }
-                        });
-                    }
-                    return;
-                }
-
-                if (!ehGatilho) {
-                    // ... (rest of logic)
-                    console.log(`ℹ️ Mensagem ignorada (não é a frase de início e sem sessão ativa): "${messageText}"`);
-
-                    // FALLBACK: Avisar o usuário em vez de ignorar
-                    await this.enviarMensagem(
-                        remoteJid,
-                        "Olá! 👋 Como passou um tempo, perdi nossa conexão. Para continuarmos, por favor digite: *Oi, quero um plano de saúde*"
-                    );
-                    return;
-                }
-
-                // INÍCIO DA CONVERSA (CRIAR NOVO)
-                const leadId = await this.getOrCreateLead(remoteJid, userId);
-                if (!leadId) return;
-
-                conversation = {
-                    userId,
-                    leadId,
-                    lastInteraction: Date.now(),
-                    reminded: false
-                };
-                conversations.set(remoteJid, conversation);
-
-                // Iniciar com mensagem introdutória da State Machine (MarIA)
-                // Passamos string vazia para forçar o estado START
-                await this.processarResposta(remoteJid, "", conversation);
                 return;
             }
+
+            if (!ehGatilho) {
+                await this.enviarMensagem(remoteJid, "Olá! 👋 Como passou um tempo, perdi nossa conexão. Para continuarmos, por favor digite: *Oi, quero um plano de saúde*");
+                return;
+            }
+
+            const leadId = await this.getOrCreateLead(remoteJid, userId);
+            if (!leadId) return;
+
+            conversation = { userId, leadId, lastInteraction: Date.now(), reminded: false };
+            conversations.set(remoteJid, conversation);
+            await this.processarResposta(remoteJid, "", conversation);
+            return;
         }
 
-        if (conversation) {
-            // Atualizar timestamp da última interação
-            conversation.lastInteraction = Date.now();
-            conversation.reminded = false; // Resetar flag se usuário respondeu
-
-            // Processar resposta (com o texto já traduzido se foi um número)
-            await this.processarResposta(remoteJid, textoFinal, conversation);
-        }
+        // ── 4. CONTINUAR CONVERSA ATIVA ────────────────────────────────────────
+        conversation.lastInteraction = Date.now();
+        conversation.reminded = false;
+        await this.processarResposta(remoteJid, textoFinal, conversation);
     }
 
     private async findActiveLeadId(remoteJid: string): Promise<string | null> {
         const raw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
-        // Gera também o formato formatado para encontrar leads já migrados
         const digits = raw.startsWith('55') ? raw.slice(2) : raw;
         const formatted = digits.length === 11
             ? `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
@@ -295,10 +192,7 @@ class WhatsAppService {
         try {
             const lead = await prisma.lead.findFirst({
                 where: {
-                    OR: [
-                        { telefone: raw },
-                        { telefone: formatted },
-                    ],
+                    OR: [{ telefone: raw }, { telefone: formatted }],
                     status: { not: 'finalizado' }
                 },
                 orderBy: { criadoEm: 'desc' }
@@ -310,27 +204,30 @@ class WhatsAppService {
         }
     }
 
-    private async processarResposta(
-        remoteJid: string,
-        textoUsuario: string,
-        conversation: ConversationState
-    ) {
+    private async processarResposta(remoteJid: string, textoUsuario: string, conversation: ConversationState) {
         if (!conversation.leadId) return;
 
         try {
             await this.sock.sendPresenceUpdate('composing', remoteJid);
-
-            // Usar Máquina de Estados (ChatService)
             const chatResponse = await chatService.processUserMessage(conversation.leadId, textoUsuario);
 
-            // ── Salvar botões para tradução numérica na próxima mensagem ─────
-            if (chatResponse.buttons && chatResponse.buttons.length > 0) {
-                lastButtons.set(remoteJid, chatResponse.buttons.map(b => b.label));
+            // Persistência de botões para próxima interação
+            const labels = chatResponse.buttons?.map(b => b.label) ?? [];
+            if (labels.length > 0) {
+                lastButtons.set(remoteJid, labels);
+                await prisma.lead.update({
+                    where: { id: conversation.leadId },
+                    data: { lastButtons: labels }
+                }).catch(() => { });
             } else {
-                lastButtons.delete(remoteJid); // Sem botões = limpar tradução
+                lastButtons.delete(remoteJid);
+                await prisma.lead.update({
+                    where: { id: conversation.leadId },
+                    data: { lastButtons: [] }
+                }).catch(() => { });
             }
 
-            // ── Formatar mensagem com opções visuais ─────────────────────────
+            // Formatação visual da mensagem
             let mensagemFinal = chatResponse.text;
             if (chatResponse.buttons && chatResponse.buttons.length > 0) {
                 const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
@@ -339,273 +236,134 @@ class WhatsAppService {
                     mensagemFinal += `${emojis[i] ?? `${i + 1}.`} ${btn.label}\n`;
                 });
                 mensagemFinal += '\n_👆 Responda com o número da opção_';
-                mensagemFinal = mensagemFinal.trimEnd();
             }
 
-            await this.enviarMensagem(remoteJid, mensagemFinal);
-
-            console.log(`📤 Resposta enviada via State Machine para ${remoteJid}`);
+            await this.enviarMensagem(remoteJid, mensagemFinal.trimEnd());
         } catch (error) {
-            console.error('❌ Erro ao processar resposta via State Machine:', error);
-            await this.enviarMensagem(remoteJid, "Desculpe, tive um problema técnico ao processar sua mensagem. Vamos tentar de novo?");
+            console.error('❌ Erro processarResposta:', error);
+            await this.enviarMensagem(remoteJid, "Ops, tive um problema técnico. Pode repetir?");
         }
     }
 
     private async getOrCreateLead(remoteJid: string, userId?: string): Promise<string | undefined> {
         const telefoneRaw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
-
-        // Formatar telefone para exibição legível: 5511999999999 → (11) 99999-9999
         const formatarTelefone = (raw: string): string => {
-            // Remove código do Brasil se presente (55)
             const digits = raw.startsWith('55') ? raw.slice(2) : raw;
-            if (digits.length === 11) {
-                return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-            } else if (digits.length === 10) {
-                return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-            }
-            return raw; // fallback: mantém original
+            if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+            if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+            return raw;
         };
-
         const telefone = formatarTelefone(telefoneRaw);
 
         try {
-            // Tentar encontrar lead em andamento (não finalizado) — busca tanto pelo raw quanto pelo formatado
             const leadExistente = await prisma.lead.findFirst({
-                where: {
-                    OR: [
-                        { telefone: telefone },
-                        { telefone: telefoneRaw },
-                    ],
-                    status: { not: 'finalizado' }
-                },
+                where: { OR: [{ telefone }, { telefone: telefoneRaw }], status: { not: 'finalizado' } },
                 orderBy: { criadoEm: 'desc' }
             });
 
             if (leadExistente) {
-                console.log(`📝 Retomando lead existente: ${leadExistente.id}`);
-                // Atualizar telefone para formato legível se ainda estiver no formato bruto
                 if (leadExistente.telefone === telefoneRaw) {
-                    await prisma.lead.update({
-                        where: { id: leadExistente.id },
-                        data: { telefone }
-                    });
+                    await prisma.lead.update({ where: { id: leadExistente.id }, data: { telefone } });
                 }
                 return leadExistente.id;
             }
 
-            // Se não, criar novo
-            // Tentar atribuir para lcriva@gmail.com primeiro
-            let corretor = await prisma.user.findFirst({
-                where: { email: 'lcriva@gmail.com' }
-            });
-
-            // Fallback para primeiro usuário se o email não existir
-            if (!corretor) {
-                corretor = await prisma.user.findFirst();
-            }
-
-            if (!corretor) {
-                console.error('❌ Erro: Nenhum usuário no sistema para vincular o lead.');
-                return undefined;
-            }
+            let corretor = await prisma.user.findFirst({ where: { email: 'lcriva@gmail.com' } });
+            if (!corretor) corretor = await prisma.user.findFirst();
+            if (!corretor) return undefined;
 
             const novoLead = await prisma.lead.create({
                 data: {
-                    telefone,           // formatado: (11) 99999-9999
-                    nome: `WhatsApp ${telefone}`, // placeholder até usuário informar o nome
+                    telefone,
+                    nome: `WhatsApp ${telefone}`,
                     userId: corretor.id,
                     status: 'novo',
                     origem: 'whatsapp',
-                    percentualConclusao: 10 // Começa com 10% (contato iniciado)
+                    percentualConclusao: 10
                 }
             });
-            console.log(`📝 Novo lead criado: ${novoLead.id} | Tel: ${telefone}`);
 
-            // Criar interação inicial
             await prisma.interacao.create({
-                data: {
-                    tipo: 'whatsapp',
-                    descricao: 'Início de conversa pelo bot (IA)',
-                    leadId: novoLead.id
-                }
+                data: { tipo: 'whatsapp', descricao: 'Início de conversa pelo bot (IA)', leadId: novoLead.id }
             });
 
             return novoLead.id;
-
         } catch (error) {
-            console.error('❌ Erro ao buscar/criar lead:', error);
+            console.error('❌ Erro getOrCreateLead:', error);
             return undefined;
         }
     }
 
     async enviarMensagem(numero: string, mensagem: string) {
         try {
-            if (!this.sock) {
-                throw new Error('WhatsApp não conectado');
-            }
-
+            if (!this.sock) throw new Error('WhatsApp não conectado');
             await this.sock.sendMessage(numero, { text: mensagem });
-            console.log(`✅ Mensagem enviada para ${numero}`);
         } catch (error) {
-            console.error('❌ Erro ao enviar mensagem:', error);
+            console.error('❌ Erro enviarMensagem:', error);
             throw error;
         }
     }
 
-    getQRCode() {
-        return this.qrCodeData;
-    }
-
-    isConnected() {
-        return this.sock?.user !== undefined;
-    }
+    getQRCode() { return this.qrCodeData; }
+    isConnected() { return this.sock?.user !== undefined; }
 
     desconectar() {
-        if (this.sock) {
-            this.sock.end();
-            this.sock = null;
-            console.log('❌ WhatsApp desconectado');
-        }
-        if (this.monitorInterval) {
-            clearInterval(this.monitorInterval);
-            this.monitorInterval = null;
-        }
+        if (this.sock) { this.sock.end(); this.sock = null; }
+        if (this.monitorInterval) { clearInterval(this.monitorInterval); this.monitorInterval = null; }
     }
 
     private startMonitoring() {
         if (this.monitorInterval) return;
-
-        console.log('⏰ Iniciando monitoramento de inatividade...');
-
-        // Verificar a cada 30 segundos
-        this.monitorInterval = setInterval(() => {
-            this.checkInactivity();
-        }, 30 * 1000);
+        this.monitorInterval = setInterval(() => this.checkInactivity(), 30 * 1000);
     }
 
     private async checkInactivity() {
-        // Regras de Tempo (em ms)
-        const MSG_15_MIN = 15 * 60 * 1000;
-        const MSG_2_HORAS = 2 * 60 * 60 * 1000;
-        const LIMITE_2_DIAS = 2 * 24 * 60 * 60 * 1000; // 48h
-        const MAX_FOLLOWUPS = 20; // Limite de segurança para não spammar eternamente
-
+        const LIMITE_2_DIAS = 2 * 24 * 60 * 60 * 1000;
         const agora = Date.now();
 
         for (const [remoteJid, state] of conversations.entries()) {
-            if (!this.sock) continue;
-
+            if (!this.sock || !state.leadId) continue;
             const tempoInativo = agora - state.lastInteraction;
 
-            // Busca lead no banco para saber status real
-            let lead = null;
-            if (state.leadId) {
-                try {
-                    lead = await prisma.lead.findUnique({ where: { id: state.leadId } });
-                } catch (err) {
-                    console.error("Erro ao verificar lead no job:", err);
+            try {
+                const lead = await prisma.lead.findUnique({ where: { id: state.leadId } });
+                if (!lead || ['finalizado', 'negociacao', 'perdido'].includes(lead.status) || lead.percentualConclusao >= 100) {
+                    if (tempoInativo >= 30 * 60 * 1000) conversations.delete(remoteJid);
                     continue;
                 }
-            }
 
-            // Se não tem lead ou já finalizou/negociacao, remove da memória e segue
-            if (!lead || lead.status === 'finalizado' || lead.status === 'negociacao' || lead.status === 'perdido' || lead.percentualConclusao >= 100) {
-                if (tempoInativo >= 30 * 60 * 1000) { // 30 min de folga
+                if ((agora - new Date(lead.criadoEm).getTime()) >= LIMITE_2_DIAS) {
+                    await this.enviarMensagem(remoteJid, "Atendimento expirado por inatividade. Se precisar, chame novamente! 👋");
+                    await prisma.lead.update({ where: { id: lead.id }, data: { status: 'perdido' } });
                     conversations.delete(remoteJid);
+                    continue;
                 }
-                continue;
-            }
 
-            // REGRA DE CANCELAMENTO (2 dias sem resposta)
-            // Se já mandamos N follow-ups e passou 2 dias desde a criação ou último update...
-            // A regra diz: "colocar uma mensagem depois de 2 dias que caso o cliente não deseja prosseguir... encerra"
-            const tempoDesdeCriacao = agora - new Date(lead.criadoEm).getTime();
+                // Follow-ups (Simplificados para manter o arquivo limpo)
+                const followUpCount = lead.followUpCount || 0;
+                const lastFollowUp = lead.lastFollowUpAt ? new Date(lead.lastFollowUpAt).getTime() : 0;
 
-            if (tempoDesdeCriacao >= LIMITE_2_DIAS) {
-                // Verifica se já mandamos a mensagem de encerramento
-                // Vamos usar uma flag no estado ou verificar se o status já é quase perdido
-                // Simplificação: Se passou 2 dias e ainda está 'novo', mandamos msg final e marcamos como perdido.
-
-                console.log(`💀 Lead ${lead.id} expirou (2 dias). Encerrando.`);
-
-                await this.enviarMensagem(
-                    remoteJid,
-                    "Olá! Como não tivemos mais retorno, estou encerrando seu atendimento por aqui. Caso queira retomar no futuro, é só chamar! 👋"
-                );
-
-                await prisma.lead.update({
-                    where: { id: lead.id },
-                    data: { status: 'perdido' } // Remove da lista de preenchimento
-                });
-
-                conversations.delete(remoteJid);
-                continue;
-            }
-
-            // LÓGICA DE FOLLOW-UP
-
-            const lastFollowUp = lead.lastFollowUpAt ? new Date(lead.lastFollowUpAt).getTime() : 0;
-            const followUpCount = lead.followUpCount || 0;
-
-            // 1º Follow-up: 15 minutos após última interação do LEAD (se count == 0)
-            // Lembre: lastInteraction atualiza quando o USER manda msg.
-            if (followUpCount === 0) {
-                if (tempoInativo >= MSG_15_MIN) {
-                    await this.enviarFollowUp(remoteJid, lead.id, 1);
+                if (followUpCount === 0 && tempoInativo >= 15 * 60 * 1000) {
+                    await this.dispararFollowUp(remoteJid, lead.id, 1);
+                } else if (followUpCount > 0 && followUpCount < 20 && (agora - lastFollowUp) >= 2 * 60 * 60 * 1000) {
+                    await this.dispararFollowUp(remoteJid, lead.id, followUpCount + 1);
                 }
-            }
-            // Próximos Follow-ups: A cada 2 horas (baseado no último envio de follow-up)
-            else if (followUpCount < MAX_FOLLOWUPS) {
-                const tempoDesdeUltimoFollowUp = agora - lastFollowUp;
-
-                if (tempoDesdeUltimoFollowUp >= MSG_2_HORAS) {
-                    await this.enviarFollowUp(remoteJid, lead.id, followUpCount + 1);
-                }
-            }
+            } catch (err) { console.error("Erro inatividade:", err); }
         }
     }
 
-    private async enviarFollowUp(remoteJid: string, leadId: string, count: number) {
-        let mensagem = "";
-
-        if (count === 1) {
-            mensagem = "Olá! 👋 Ainda está por aí? Falta pouco para sua cotação!";
-        } else {
-            const opcoes = [
-                "Lembrete: Estou aguardando seus dados para calcular o melhor plano! 😉",
-                "Quer continuar a cotação? É só responder aqui!",
-                "Não esqueça de terminar o preenchimento para ver os valores! 🏥"
-            ];
-            mensagem = opcoes[Math.floor(Math.random() * opcoes.length)];
-        }
-
-        console.log(`⏰ Enviando Follow-up #${count} para ${remoteJid}`);
-
+    private async dispararFollowUp(remoteJid: string, leadId: string, count: number) {
+        const msg = count === 1 ? "Olá! 👋 Ainda está por aí? Falta pouco para sua cotação!" : "Quer continuar a cotação? É só responder com o número da opção! 😉";
         try {
-            await this.enviarMensagem(remoteJid, mensagem);
-
-            // Atualiza contador no banco
-            await prisma.lead.update({
-                where: { id: leadId },
-                data: {
-                    lastFollowUpAt: new Date(),
-                    followUpCount: { increment: 1 }
-                }
-            });
-        } catch (error) {
-            console.error(`❌ Erro ao enviar follow-up para ${remoteJid}:`, error);
-        }
+            await this.enviarMensagem(remoteJid, msg);
+            await prisma.lead.update({ where: { id: leadId }, data: { lastFollowUpAt: new Date(), followUpCount: { increment: 1 } } });
+        } catch (e) { }
     }
 }
 
-// Singleton
 let whatsappService: WhatsAppService | null = null;
-
 export const getWhatsAppService = () => {
-    if (!whatsappService) {
-        whatsappService = new WhatsAppService();
-    }
+    if (!whatsappService) whatsappService = new WhatsAppService();
     return whatsappService;
 };
-
 export default WhatsAppService;
