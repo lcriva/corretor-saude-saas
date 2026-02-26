@@ -12,8 +12,8 @@ cd /var/www/app
 # 1. Baixar alterações do GitHub
 git pull origin main
 
-# 2. Instalar dependências do backend (se houver pacotes novos)
-cd backend && npm install
+# 2. Instalar dependências e Build do backend
+cd backend && npm install && npm run build
 
 # 3. Sincronizar schema com o banco (apenas quando schema.prisma mudar)
 npx prisma db push
@@ -34,6 +34,7 @@ pm2 status
 |---|---|
 | `git pull` | **SEMPRE** |
 | `npm install` | Quando `package.json` mudou |
+| `npm run build` (no backend) | **SEMPRE** que arquivos do `backend/src` mudarem |
 | `prisma db push` | Quando `schema.prisma` mudou |
 | `npm run build` | Quando qualquer arquivo do `frontend/` mudou |
 | `pm2 restart all` | **SEMPRE** |
