@@ -159,7 +159,8 @@ class WhatsAppService {
                 'oi quero um plano de saude',
                 'ola gostaria de uma cotacao do prevent senior',
                 'quero um plano de saude',
-                'cotacao prevent senior'
+                'cotacao prevent senior',
+                'simular plano prevent senior'
             ];
 
             const ehGatilho = gatilhos.some(g => msgLimpa.includes(g));
@@ -173,13 +174,18 @@ class WhatsAppService {
                 return;
             }
 
+            const msgOpcao = "1️⃣ Simular Plano Prevent Senior\n\n_👆 Responda com o número 1 para começar_";
+            const botoesIniciais = ['Simular Plano Prevent Senior'];
+
             if (isAudio) {
-                await this.enviarMensagem(remoteJid, "Olá! 👋 Notei que você enviou um áudio, mas no momento eu ainda não consigo ouvi-los. 😅\n\nPara começarmos sua cotação, por favor *digite*: _Olá! Gostaria de uma cotação do Prevent Senior_");
+                lastButtons.set(remoteJid, botoesIniciais);
+                await this.enviarMensagem(remoteJid, "Olá! 👋 Notei que você enviou um áudio, mas no momento eu ainda não consigo ouvi-los. 😅\n\n" + msgOpcao);
                 return;
             }
 
             if (!ehGatilho) {
-                await this.enviarMensagem(remoteJid, "Olá! 👋 Como passou um tempo, perdi nossa conexão. Para continuarmos, por favor digite: *Oi, quero um plano de saúde*");
+                lastButtons.set(remoteJid, botoesIniciais);
+                await this.enviarMensagem(remoteJid, "Olá! 👋 Como passou um tempo, perdi nossa conexão.\n\n" + msgOpcao);
                 return;
             }
 
