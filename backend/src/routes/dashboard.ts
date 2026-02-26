@@ -203,27 +203,24 @@ router.get('/alertas', async (req, res) => {
             take: 5
         });
 
-        // Leads Leads Frios (Em preenchimento < 100% e status = novo)
+        // Leads Frios (Em preenchimento < 100%)
         const leadsFrios = await prisma.lead.findMany({
             where: {
                 ...whereUser,
                 ...validLeadFilter,
-                status: 'novo',
-                percentualConclusao: { lt: 100 }
+                percentualConclusao: { lt: 100 },
+                NOT: { status: 'fechado' } // Não mostrar fechados aqui
             },
             take: 20,
             orderBy: { atualizadoEm: 'desc' }
         });
 
-        // Leads Quentes (100% preenchido OU status = negociacao)
+        // Leads Quentes (100% preenchido — Independente do status)
         const combinedQuentes = await prisma.lead.findMany({
             where: {
                 ...whereUser,
                 ...validLeadFilter,
-                OR: [
-                    { status: 'negociacao' },
-                    { percentualConclusao: 100 }
-                ],
+                percentualConclusao: 100,
                 NOT: { status: 'fechado' } // Não mostrar fechados aqui
             },
             take: 50,
