@@ -26,6 +26,9 @@ const conversations = new Map<string, ConversationState>();
 // Últimos botões enviados por conversa (para traduzir número → label)
 const lastButtons = new Map<string, string[]>();
 
+// Mapa de etiquetas do WhatsApp (Nome -> ID)
+const whatsappLabels = new Map<string, string>();
+
 class WhatsAppService {
     private sock: any = null;
     private qrCodeData: string = '';
@@ -79,6 +82,7 @@ class WhatsAppService {
                 } else if (connection === 'open') {
                     this.isConnecting = false;
                     console.log('✅ WhatsApp conectado com sucesso!');
+                    this.fetchLabels().catch(err => console.error('❌ Erro ao buscar etiquetas:', err));
                 }
             });
 
@@ -271,6 +275,9 @@ class WhatsAppService {
             }
 
             await this.enviarMensagem(remoteJid, mensagemFinal.trimEnd());
+
+            // Sincroniza etiqueta após interação
+            this.syncLeadLabel(remoteJid, conversation.leadId).catch(() => { });
         } catch (error) {
             console.error('❌ Erro processarResposta:', error);
             await this.enviarMensagem(remoteJid, "Ops, tive um problema técnico. Pode repetir?");
@@ -321,6 +328,9 @@ class WhatsAppService {
                 data: { tipo: 'whatsapp', descricao: 'Início de conversa pelo bot (IA)', leadId: novoLead.id }
             });
 
+            // Etiqueta inicial como Frio
+            this.syncLeadLabel(remoteJid, novoLead.id).catch(() => { });
+
             return novoLead.id;
         } catch (error) {
             console.error('❌ Erro getOrCreateLead:', error);
@@ -369,6 +379,10 @@ class WhatsAppService {
                 if ((agora - new Date(lead.criadoEm).getTime()) >= LIMITE_2_DIAS) {
                     await this.enviarMensagem(remoteJid, "Atendimento expirado por inatividade. Se precisar, chame novamente! 👋");
                     await prisma.lead.update({ where: { id: lead.id }, data: { status: 'perdido' } });
+
+                    // Sincroniza etiqueta como Frio (Perdido ainda é frio se < 100)
+                    this.syncLeadLabel(remoteJid, lead.id).catch(() => { });
+
                     conversations.delete(remoteJid);
                     continue;
                 }
@@ -391,7 +405,78 @@ class WhatsAppService {
         try {
             await this.enviarMensagem(remoteJid, msg);
             await prisma.lead.update({ where: { id: leadId }, data: { lastFollowUpAt: new Date(), followUpCount: { increment: 1 } } });
+
+            // Sincroniza etiqueta no follow-up
+            this.syncLeadLabel(remoteJid, leadId).catch(() => { });
         } catch (e) { }
+    }
+
+    private async fetchLabels() {
+        if (!this.sock) return;
+        try {
+            const result = await this.sock.query({
+                tag: 'iq',
+                attrs: {
+                    display_name: 'WhatsApp business labels',
+                    type: 'get',
+                    xmlns: 'w:biz:label',
+                    to: '@s.whatsapp.net',
+                },
+                content: [{ tag: 'labels', attrs: {} }]
+            });
+
+            if (result && result.content && result.content[0]?.content) {
+                const labels = result.content[0].content;
+                whatsappLabels.clear();
+                labels.forEach((l: any) => {
+                    if (l.attrs && l.attrs.name && l.attrs.id) {
+                        whatsappLabels.set(l.attrs.name.toLowerCase(), l.attrs.id);
+                    }
+                });
+                console.log(`🏷️ ${whatsappLabels.size} Etiquetas do WhatsApp Business carregadas.`);
+            }
+        } catch (error) {
+            console.error('⚠️ Não foi possível carregar etiquetas (certeza que é conta Business?):', error);
+        }
+    }
+
+    private async syncLeadLabel(remoteJid: string, leadId: string) {
+        if (!this.sock || whatsappLabels.size === 0) return;
+
+        try {
+            const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+            if (!lead) return;
+
+            // Regras do Dashboard:
+            // Frio: percentual < 100
+            // Quente: percentual === 100 E idade != null E planoDesejado != null
+            const isQuente = lead.percentualConclusao === 100 && lead.idade !== null && lead.planoDesejado !== null;
+            const isFrio = !isQuente;
+
+            const labelName = isQuente ? 'lead quente' : 'lead frio';
+            const labelId = whatsappLabels.get(labelName);
+
+            if (labelId) {
+                // Remove a outra etiqueta caso exista (para não ficar com as duas)
+                const otherLabelName = isQuente ? 'lead frio' : 'lead quente';
+                const otherLabelId = whatsappLabels.get(otherLabelName);
+
+                if (otherLabelId) {
+                    await this.sock.chatModify({
+                        addChatLabel: { labelId: labelId },
+                        removeChatLabel: { labelId: otherLabelId }
+                    }, remoteJid);
+                } else {
+                    await this.sock.chatModify({ addChatLabel: { labelId: labelId } }, remoteJid);
+                }
+
+                console.log(`🏷️ Etiqueta "${labelName}" aplicada ao lead ${lead.nome}`);
+            } else {
+                console.log(`⚠️ Etiqueta "${labelName}" não encontrada no WhatsApp. Crie-a no App Business para funcionar.`);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao sincronizar etiqueta:', error);
+        }
     }
 }
 
