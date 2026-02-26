@@ -218,7 +218,7 @@ export class ChatService {
                     session.step = ChatStep.QUANTIDADE_DEPENDENTES;
                     return { text: 'Quantos dependentes deseja incluir?' };
                 }
-                return { text: 'Por favor, responda *Sim* ou *Não*.', buttons: [btn('Não'), btn('Sim')] };
+                return this.getFallbackResponse('Por favor, responda *Sim* ou *Não*.');
             }
 
             // ─── QUANTIDADE DE DEPENDENTES ────────────────────────────────────
@@ -290,7 +290,7 @@ export class ChatService {
                     session.step = ChatStep.PLANO_ATUAL_OPERADORA;
                     return { text: 'Qual é a operadora do seu plano atual?' };
                 }
-                return { text: 'Por favor, responda *Sim* ou *Não*.', buttons: [btn('Não'), btn('Sim')] };
+                return this.getFallbackResponse('Por favor, responda *Sim* ou *Não*.');
             }
 
             // ─── OPERADORA ATUAL ──────────────────────────────────────────────
