@@ -298,14 +298,7 @@ export default function AdminDashboardPage() {
                         </div>
                     )}
 
-                    {(!alertas?.leadsSemInteracao || alertas.leadsSemInteracao.length === 0) &&
-                        (!alertas?.propostasSemResposta || alertas.propostasSemResposta.length === 0) &&
-                        (!alertas?.negociacoesParadas || alertas.negociacoesParadas.length === 0) && (
-                            <div className="text-center py-8 text-gray-500">
-                                <p className="text-lg">🎉 Tudo em dia!</p>
-                                <p className="text-sm mt-1">Nenhuma ação urgente no momento</p>
-                            </div>
-                        )}
+
                 </div>
             </div>
         </div>
