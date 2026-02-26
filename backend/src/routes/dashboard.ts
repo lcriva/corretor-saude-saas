@@ -221,6 +221,8 @@ router.get('/alertas', async (req, res) => {
                 ...whereUser,
                 ...validLeadFilter,
                 percentualConclusao: 100,
+                idade: { not: null },
+                planoDesejado: { not: null },
                 NOT: { status: 'fechado' } // Não mostrar fechados aqui
             },
             take: 50,

@@ -503,7 +503,7 @@ export class ChatService {
             return { text: `Obrigado, ${lead?.nome?.split(' ')[0]}! Agora, qual o seu *WhatsApp com DDD* para o especialista entrar em contato?\n\nExemplo: 11999999999` };
         }
 
-        await this.updateLead(session.leadId, { status: 'negociacao', percentualConclusao: 100 });
+        await this.updateLead(session.leadId, { status: 'negociacao', percentualConclusao: 20 });
         session.step = ChatStep.ESPECIALISTA;
         return { text: 'Vou encaminhar você agora para um especialista. Aguarde um momento... ✅\n\nEm breve nossa equipe entrará em contato! 💙' };
     }
