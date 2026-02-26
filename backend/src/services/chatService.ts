@@ -142,24 +142,28 @@ export class ChatService {
 
             // ─── CHECKLIST INICIAL ────────────────────────────────────────────
             case ChatStep.CHECKLIST: {
-                session.step = ChatStep.SIMULACAO;
-                return {
-                    text:
-                        '📋 *Checklist Prevent Senior — O que você precisa saber*\n\n' +
-                        'A *Prevent Senior* é a operadora pioneira e especialista no público *40 anos+*. Nossa estrutura foi projetada para oferecer conforto, modernidade e uma experiência única em saúde.\n\n' +
-                        '📍 *Onde estamos:* São Paulo, Baixada Santista e Rio de Janeiro.\n\n' +
-                        '🛡 *Cobertura:* Padrão ROL ANS (Internações, cirurgias, consultas, exames laboratoriais, terapias e coleta domiciliar).\n\n' +
-                        '⏳ *Carências Padrão:*\n' +
-                        '• *24h:* Urgência e Emergência\n' +
-                        '• *30 dias:* Consultas e exames simples\n' +
-                        '• *180 dias:* Internações e cirurgias\n' +
-                        '• *24 meses:* Doenças pré-existentes\n\n' +
-                        '🔄 *Portabilidade:* Se você já tem plano, podemos reduzir ou isentar suas carências!\n\n' +
-                        '🚫 *Sem Fidelidade:* Você tem liberdade total.\n\n' +
-                        '📲 *Tecnologia:* App exclusivo para carteirinha, rede e agendamentos.\n\n' +
-                        'Deseja simular os valores agora ou falar direto com um especialista?',
-                    buttons: [btn('Simular plano'), btn('Falar com especialista')],
-                };
+                const prosseguir = text.includes('prosseguir') || text.includes('ver') || text.includes('checklist') || text === '1';
+
+                if (prosseguir) {
+                    session.step = ChatStep.SIMULACAO;
+                    return {
+                        text:
+                            '📋 *Checklist Prevent Senior — O que você precisa saber*\n\n' +
+                            'A *Prevent Senior* é a operadora pioneira e especialista no público *40 anos+*. Nossa estrutura foi projetada para oferecer conforto, modernidade e uma experiência única em saúde.\n\n' +
+                            '📍 *Onde estamos:* São Paulo, Baixada Santista e Rio de Janeiro.\n\n' +
+                            '🛡 *Cobertura:* Padrão ROL ANS (Internações, cirurgias, consultas, exames laboratoriais, terapias e coleta domiciliar).\n\n' +
+                            '⏳ *Carências Padrão:*\n' +
+                            '• *24h:* Urgência e Emergência\n' +
+                            '• *30 dias:* Consultas e exames simples\n' +
+                            '• *180 dias:* Internações e cirurgias\n' +
+                            '• *24 meses:* Doenças pré-existentes\n\n' +
+                            '🔄 *Portabilidade:* Se você já tem plano, podemos reduzir ou isentar suas carências!\n\n' +
+                            'Deseja simular os valores agora ou falar direto com um especialista?',
+                        buttons: [btn('Simular plano'), btn('Falar com especialista')],
+                    };
+                }
+
+                return this.getFallbackResponse('Por favor, informe se podemos prosseguir ou se deseja falar com um especialista.');
             }
 
             // ─── CONHECER O PLANO ─────────────────────────────────────────────
@@ -180,14 +184,27 @@ export class ChatService {
 
             // ─── SIMULACAO (distribuidor de intenções) ─────────────────────────
             case ChatStep.SIMULACAO: {
-                if (text.includes('conhecer') || text === 'conhecer o plano') {
+                const isSimular = text.includes('simular') || text.includes('plano') || text.includes('valor') || text === '1';
+                const isConhecer = text.includes('conhecer') || text === 'conhecer o plano';
+                const isEspecialista = text.includes('especialista') || text === '2';
+
+                if (isConhecer) {
                     session.step = ChatStep.CONHECER_PLANO;
                     return this.handleStep(session, '');
                 }
-                session.step = ChatStep.DADOS_TITULAR;
-                return {
-                    text: 'Perfeito! ✅\n\nPara calcular o valor do plano, preciso de algumas informações rápidas.\n\nQual a *idade do titular* do plano?',
-                };
+
+                if (isSimular) {
+                    session.step = ChatStep.DADOS_TITULAR;
+                    return {
+                        text: 'Perfeito! ✅\n\nPara calcular o valor do plano, preciso de algumas informações rápidas.\n\nQual a *idade do titular* do plano?',
+                    };
+                }
+
+                if (isEspecialista) {
+                    return this.encaminharEspecialista(session);
+                }
+
+                return this.getFallbackResponse('Para continuarmos, por favor escolha se deseja *Simular o plano* ou *Falar com um especialista*.');
             }
 
             // ─── DADOS DO TITULAR ─────────────────────────────────────────────
