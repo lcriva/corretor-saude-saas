@@ -176,7 +176,10 @@ export default function AdminDashboardPage() {
                                         <h3 className="font-semibold text-gray-700 text-sm truncate">{lead.nome || 'Visitante'}</h3>
                                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{lead.percentualConclusao}%</span>
                                     </div>
-                                    <p className="text-xs text-gray-500 mb-2">{lead.telefone}</p>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-xs text-gray-500">{lead.telefone}</p>
+                                        <p className="text-[10px] text-gray-400">{new Date(lead.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
 
                                     {/* Destaque de informações faltando */}
                                     {lead.percentualConclusao < 100 && (
@@ -225,7 +228,10 @@ export default function AdminDashboardPage() {
                                             <AlertCircle className="w-4 h-4 text-red-500" />
                                         </div>
                                     </div>
-                                    <p className="text-xs text-gray-600 mb-1">{lead.telefone}</p>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <p className="text-xs text-gray-600">{lead.telefone}</p>
+                                        <p className="text-[10px] text-gray-400">{new Date(lead.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
                                     {lead.valorPlano && (
                                         <p className="text-xs font-bold text-red-700 mb-2">R$ {lead.valorPlano.toLocaleString()}</p>
                                     )}
