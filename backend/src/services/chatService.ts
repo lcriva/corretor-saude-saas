@@ -110,6 +110,15 @@ export class ChatService {
     private async handleStep(session: ChatSession, messageText: string): Promise<ChatResponse> {
         const text = messageText.trim().toLowerCase();
 
+        // ─── DESVIO GLOBAL: FALAR COM ESPECIALISTA ──────────────────────────
+        // Se o usuário clicar no botão em QUALQUER etapa (exceto capturas), redirecionamos
+        const isEspecialistaIntent = text.includes('especialista') || text === 'falar com especialista' || text.includes('falar com um especialista');
+        const isCapturaStep = session.step === ChatStep.CAPTURA_NOME || session.step === ChatStep.CAPTURA_TELEFONE;
+
+        if (isEspecialistaIntent && !isCapturaStep) {
+            return this.encaminharEspecialista(session);
+        }
+
         switch (session.step) {
 
             // ─── BOAS-VINDAS ──────────────────────────────────────────────────
@@ -164,9 +173,6 @@ export class ChatService {
 
             // ─── SIMULACAO (distribuidor de intenções) ─────────────────────────
             case ChatStep.SIMULACAO: {
-                if (text.includes('especialista') || text === 'falar com especialista') {
-                    return this.encaminharEspecialista(session);
-                }
                 if (text.includes('conhecer') || text === 'conhecer o plano') {
                     session.step = ChatStep.CONHECER_PLANO;
                     return this.handleStep(session, '');
@@ -370,9 +376,6 @@ export class ChatService {
 
             // ─── CONFIRMAÇÃO ──────────────────────────────────────────────────
             case ChatStep.CONFIRMACAO: {
-                if (text.includes('especialista') || text.includes('falar')) {
-                    return this.encaminharEspecialista(session);
-                }
                 if (text.includes('aguardar') || text.includes('contato') || text.includes('fechar')) {
                     // Se escolher aguardar, ainda perguntamos a urgência para priorizar
                     return this.gerarConfirmacao(session);
@@ -478,16 +481,23 @@ export class ChatService {
 
     private async encaminharEspecialista(session: ChatSession): Promise<ChatResponse> {
         const lead = await prisma.lead.findUnique({ where: { id: session.leadId } });
-        const hasValidName = lead?.nome && !lead.nome.startsWith('Visitante Site') && !lead.nome.startsWith('WhatsApp');
-        const hasValidPhone = lead ? this.isTelefoneValido(lead.telefone) : false;
 
-        if (!hasValidName) {
+        // Validação rigorosa do Nome
+        const nomeInvalido = !lead?.nome ||
+            lead.nome.trim() === '' ||
+            lead.nome.startsWith('Visitante Site') ||
+            lead.nome.startsWith('WhatsApp');
+
+        // Validação rigorosa do Telefone
+        const telefoneValido = lead ? this.isTelefoneValido(lead.telefone) : false;
+
+        if (nomeInvalido) {
             session.step = ChatStep.CAPTURA_NOME;
             session.pendingAction = 'encaminhar';
             return { text: 'Com certeza! Para que o especialista possa te atender melhor, qual o seu *nome completo*?' };
         }
 
-        if (!hasValidPhone) {
+        if (!telefoneValido) {
             session.step = ChatStep.CAPTURA_TELEFONE;
             session.pendingAction = 'encaminhar';
             return { text: `Obrigado, ${lead?.nome?.split(' ')[0]}! Agora, qual o seu *WhatsApp com DDD* para o especialista entrar em contato?\n\nExemplo: 11999999999` };
