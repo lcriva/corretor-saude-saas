@@ -202,6 +202,13 @@ class WhatsAppService {
         conversation.lastInteraction = Date.now();
         conversation.reminded = false;
         await this.processarResposta(remoteJid, textoFinal, conversation);
+
+        // Se após processar, o lead atingiu 100%, removemos da memória para liberar para o humano
+        const finalLead = await prisma.lead.findUnique({ where: { id: conversation.leadId } });
+        if (finalLead && (finalLead.percentualConclusao >= 100 || ['negociacao', 'fechado', 'perdido'].includes(finalLead.status))) {
+            console.log(`   🔕 Lead ${finalLead.nome} finalizado/qualificado. Ativando Modo Silêncio.`);
+            conversations.delete(remoteJid);
+        }
     }
 
     private async findActiveLeadId(remoteJid: string): Promise<string | null> {
@@ -217,7 +224,8 @@ class WhatsAppService {
             const lead = await prisma.lead.findFirst({
                 where: {
                     OR: [{ telefone: raw }, { telefone: formatted }],
-                    status: { not: 'finalizado' }
+                    percentualConclusao: { lt: 100 },
+                    status: { notIn: ['finalizado', 'fechado', 'perdido'] }
                 },
                 orderBy: { criadoEm: 'desc' }
             });
