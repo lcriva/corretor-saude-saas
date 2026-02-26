@@ -116,6 +116,8 @@ class WhatsAppService {
             message.message?.imageMessage?.caption ||
             message.message?.videoMessage?.caption || '';
 
+        const isAudio = !!message.message?.audioMessage;
+
         console.log(`\n📩 [WA] Mensagem de ${remoteJid}: "${messageText}"`);
 
         const normalizar = (t: string) => t.trim().toLowerCase()
@@ -168,6 +170,11 @@ class WhatsAppService {
                 if (activeLeadId) {
                     await prisma.lead.update({ where: { id: activeLeadId }, data: { status: 'perdido' } });
                 }
+                return;
+            }
+
+            if (isAudio) {
+                await this.enviarMensagem(remoteJid, "Olá! 👋 Notei que você enviou um áudio, mas no momento eu ainda não consigo ouvi-los. 😅\n\nPara começarmos sua cotação, por favor *digite*: _Olá! Gostaria de uma cotação do Prevent Senior_");
                 return;
             }
 
