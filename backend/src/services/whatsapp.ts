@@ -99,10 +99,39 @@ class WhatsAppService {
 
     private async handleMessage(messageUpdate: any, userId?: string) {
         const message = messageUpdate.messages[0];
-        if (!message.message || message.key.fromMe) return;
+        if (!message.message) return;
 
         const remoteJid = message.key.remoteJid;
-        if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') return;
+        if (remoteJid?.endsWith('@g.us') || remoteJid === 'status@broadcast') return;
+
+        // ── 0. DETECÇÃO DE INTERVENÇÃO HUMANA (FROM ME) ─────────────────────
+        if (message.key.fromMe) {
+            const activeLeadId = await this.findActiveLeadId(remoteJid);
+            if (activeLeadId) {
+                const lead = await prisma.lead.findUnique({ where: { id: activeLeadId } });
+                // Se o lead ainda for "novo", passamos para "negociacao" pois houve intervenção manual
+                if (lead && lead.status === 'novo' && lead.percentualConclusao < 100) {
+                    console.log(`   🛠️ Intervenção humana detectada para ${lead.nome}. Bot silenciado.`);
+                    await prisma.lead.update({
+                        where: { id: activeLeadId },
+                        data: { status: 'negociacao' }
+                    });
+                    conversations.delete(remoteJid);
+                }
+            }
+            return;
+        }
+
+        // ── 0.1. CHECK DE SILÊNCIO (LEADS JÁ EM ATENDIMENTO MANUAL) ────────
+        // Se já existe um lead para esse número que NÃO é "novo", o bot não deve interagir
+        const silentLeadId = await this.findActiveLeadId(remoteJid);
+        if (silentLeadId) {
+            const silentLead = await prisma.lead.findUnique({ where: { id: silentLeadId } });
+            if (silentLead && (silentLead.status !== 'novo' || silentLead.percentualConclusao >= 100)) {
+                // Silêncio absoluto - não registra nem log para não poluir
+                return;
+            }
+        }
 
         // Tentar extrair o número real se o JID for mascarado (@lid)
         let realJid = remoteJid;
