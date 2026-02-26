@@ -177,6 +177,19 @@ export default function AdminDashboardPage() {
                                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{lead.percentualConclusao}%</span>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-2">{lead.telefone}</p>
+
+                                    {/* Destaque de informações faltando */}
+                                    {lead.percentualConclusao < 100 && (
+                                        <div className="mb-2">
+                                            <p className="text-[10px] font-bold text-orange-600 uppercase mb-1">Faltando:</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {!lead.idade && <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">Idade</span>}
+                                                {!lead.cidade && <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">Cidade</span>}
+                                                {!lead.planoDesejado && <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">Plano</span>}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                                         <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${lead.percentualConclusao}%` }}></div>
                                     </div>
