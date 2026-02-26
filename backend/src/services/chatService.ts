@@ -119,6 +119,13 @@ export class ChatService {
             return this.encaminharEspecialista(session);
         }
 
+        // ─── DESVIO GLOBAL: RECOMEÇAR ───────────────────────────────────────
+        if (text === 'recomeçar' || text === 'recomecar' || text === 'restart' || text === 'voltar ao início') {
+            session.step = ChatStep.BOAS_VINDAS;
+            session.collectedData = { dependentAges: [], currentDependentIndex: 0 };
+            return this.handleStep(session, '');
+        }
+
         switch (session.step) {
 
             // ─── BOAS-VINDAS ──────────────────────────────────────────────────
@@ -187,7 +194,7 @@ export class ChatService {
             case ChatStep.DADOS_TITULAR: {
                 const age = parseInt(messageText.replace(/\D/g, ''));
                 if (isNaN(age) || age < 0 || age > 120) {
-                    return { text: 'Por favor, informe uma idade válida (ex: 45).' };
+                    return this.getFallbackResponse('Por favor, informe uma idade válida (ex: 45).');
                 }
                 session.collectedData.titularAge = age;
                 await this.updateLead(session.leadId, { idade: age });
@@ -218,7 +225,7 @@ export class ChatService {
             case ChatStep.QUANTIDADE_DEPENDENTES: {
                 const count = parseInt(messageText.replace(/\D/g, ''));
                 if (isNaN(count) || count < 1) {
-                    return { text: 'Por favor, informe o número de dependentes (ex: 1, 2...).' };
+                    return this.getFallbackResponse('Por favor, informe o número de dependentes (ex: 1, 2...).');
                 }
                 session.collectedData.dependentCount = count;
                 session.collectedData.dependentAges = [];
@@ -232,7 +239,7 @@ export class ChatService {
             case ChatStep.IDADE_DEPENDENTES: {
                 const age = parseInt(messageText.replace(/\D/g, ''));
                 if (isNaN(age) || age < 0 || age > 120) {
-                    return { text: 'Por favor, informe uma idade válida (ex: 62).' };
+                    return this.getFallbackResponse('Por favor, informe uma idade válida (ex: 62).');
                 }
                 session.collectedData.dependentAges.push(age);
                 const idx = session.collectedData.currentDependentIndex;
@@ -254,7 +261,7 @@ export class ChatService {
 
                 // Nenhuma entrada válida → repetir
                 if (!rawCidade || rawCidade.length < 2) {
-                    return { text: 'Por favor, selecione ou digite sua cidade.', buttons: [btn('SP'), btn('RJ')] };
+                    return this.getFallbackResponse('Por favor, selecione ou digite sua cidade.');
                 }
 
                 // Normalizar botões SP / RJ
@@ -316,10 +323,7 @@ export class ChatService {
                     session.collectedData.valorPlano = quotes.ps1025_apartamento.total;
                     await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Apartamento', valorPlano: quotes.ps1025_apartamento.total, valorEstimado: quotes.ps1025_apartamento.total, status: 'novo', percentualConclusao: 80 });
                 } else {
-                    return {
-                        text: 'Por favor, escolha uma das opções abaixo:',
-                        buttons: [btn('1025 Enfermaria'), btn('1025 Apartamento'), btn('MAIS Enfermaria'), btn('MAIS Apartamento')],
-                    };
+                    return this.getFallbackResponse('Para não haver erros, escolha uma das opções de planos abaixo ou fale com um especialista:');
                 }
 
                 session.step = ChatStep.CAPTURA_NOME;
@@ -329,7 +333,7 @@ export class ChatService {
             // ─── CAPTURA DO NOME ──────────────────────────────────────────────
             case ChatStep.CAPTURA_NOME: {
                 const nome = messageText.trim();
-                if (nome.length < 3) return { text: 'Por favor, informe seu nome completo.' };
+                if (nome.length < 3) return this.getFallbackResponse('Por favor, informe seu nome completo.');
                 session.collectedData.nome = nome;
                 await this.updateLead(session.leadId, { nome });
 
@@ -364,7 +368,7 @@ export class ChatService {
             // ─── CAPTURA DO TELEFONE (site) ───────────────────────────────────
             case ChatStep.CAPTURA_TELEFONE: {
                 const phone = messageText.replace(/\D/g, '');
-                if (phone.length < 10) return { text: 'Por favor, informe o WhatsApp com DDD (ex: 11999999999).' };
+                if (phone.length < 10) return this.getFallbackResponse('Por favor, informe o WhatsApp com DDD (ex: 11999999999).');
                 await this.updateLead(session.leadId, { telefone: phone });
 
                 if (session.pendingAction === 'encaminhar') {
@@ -539,6 +543,15 @@ export class ChatService {
                 data: { leadId, tipo: role === 'user' ? 'mensagem_usuario' : 'mensagem_marIA', descricao: content.substring(0, 500) },
             });
         } catch (error) { console.error('[ChatService v4.0] Erro ao salvar interação:', error); }
+    }
+
+    private getFallbackResponse(originalError: string): ChatResponse {
+        return {
+            text:
+                `${originalError}\n\n` +
+                'Caso prefira, você pode recomeçar a simulação ou falar agora mesmo com um especialista. 😊',
+            buttons: [btn('Recomeçar'), btn('Falar com Especialista')],
+        };
     }
 }
 

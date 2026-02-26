@@ -156,6 +156,13 @@ class WhatsAppService {
         }
 
         const msgLimpa = normalizar(textoFinal);
+        const isRestart = msgLimpa === 'recomeçar' || msgLimpa === 'recomecar' || msgLimpa === 'restart' || msgLimpa === 'voltar ao início';
+
+        if (isRestart) {
+            console.log(`   🔄 Reiniciando conversa para ${remoteJid}`);
+            conversations.delete(remoteJid);
+            // Ao deletar da memória, o fluxo cairá na saudação inicial abaixo
+        }
 
         // ── 3. LÓGICA DE GATILHOS E NOVO LEAD ──────────────────────────────────
         if (!conversation) {
