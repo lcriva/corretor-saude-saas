@@ -302,19 +302,19 @@ export class ChatService {
                 if (text.includes('mais enfermaria') || text.includes('mais_enfermaria')) {
                     session.collectedData.planoDesejado = 'Prevent MAIS Enfermaria';
                     session.collectedData.valorPlano = quotes.mais_enfermaria.total;
-                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent MAIS Enfermaria', valorPlano: quotes.mais_enfermaria.total, valorEstimado: quotes.mais_enfermaria.total, status: 'negociacao', percentualConclusao: 80 });
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent MAIS Enfermaria', valorPlano: quotes.mais_enfermaria.total, valorEstimado: quotes.mais_enfermaria.total, status: 'novo', percentualConclusao: 80 });
                 } else if (text.includes('mais apartamento') || text.includes('mais_apartamento')) {
                     session.collectedData.planoDesejado = 'Prevent MAIS Apartamento';
                     session.collectedData.valorPlano = quotes.mais_apartamento.total;
-                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent MAIS Apartamento', valorPlano: quotes.mais_apartamento.total, valorEstimado: quotes.mais_apartamento.total, status: 'negociacao', percentualConclusao: 80 });
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent MAIS Apartamento', valorPlano: quotes.mais_apartamento.total, valorEstimado: quotes.mais_apartamento.total, status: 'novo', percentualConclusao: 80 });
                 } else if (text.includes('1025 enfermaria') || text.includes('1025_enfermaria') || text.includes('enfermaria')) {
                     session.collectedData.planoDesejado = 'Prevent Senior 1025 Enfermaria';
                     session.collectedData.valorPlano = quotes.ps1025_enfermaria.total;
-                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Enfermaria', valorPlano: quotes.ps1025_enfermaria.total, valorEstimado: quotes.ps1025_enfermaria.total, status: 'negociacao', percentualConclusao: 80 });
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Enfermaria', valorPlano: quotes.ps1025_enfermaria.total, valorEstimado: quotes.ps1025_enfermaria.total, status: 'novo', percentualConclusao: 80 });
                 } else if (text.includes('1025 apartamento') || text.includes('1025_apartamento') || text.includes('apartamento')) {
                     session.collectedData.planoDesejado = 'Prevent Senior 1025 Apartamento';
                     session.collectedData.valorPlano = quotes.ps1025_apartamento.total;
-                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Apartamento', valorPlano: quotes.ps1025_apartamento.total, valorEstimado: quotes.ps1025_apartamento.total, status: 'negociacao', percentualConclusao: 80 });
+                    await this.updateLead(session.leadId, { planoDesejado: 'Prevent Senior 1025 Apartamento', valorPlano: quotes.ps1025_apartamento.total, valorEstimado: quotes.ps1025_apartamento.total, status: 'novo', percentualConclusao: 80 });
                 } else {
                     return {
                         text: 'Por favor, escolha uma das opções abaixo:',
@@ -445,7 +445,7 @@ export class ChatService {
 
     private async gerarConfirmacao(session: ChatSession): Promise<ChatResponse> {
         const score = this.calcularLeadScore(session);
-        await this.updateLead(session.leadId, { leadScore: score, status: 'negociacao', percentualConclusao: 95 });
+        await this.updateLead(session.leadId, { leadScore: score, status: 'novo', percentualConclusao: 95 });
         session.step = ChatStep.URGENCIA;
         return {
             text:
@@ -503,7 +503,7 @@ export class ChatService {
             return { text: `Obrigado, ${lead?.nome?.split(' ')[0]}! Agora, qual o seu *WhatsApp com DDD* para o especialista entrar em contato?\n\nExemplo: 11999999999` };
         }
 
-        await this.updateLead(session.leadId, { status: 'negociacao', percentualConclusao: 20 });
+        await this.updateLead(session.leadId, { status: 'novo', percentualConclusao: 20 });
         session.step = ChatStep.ESPECIALISTA;
         return { text: 'Vou encaminhar você agora para um especialista. Aguarde um momento... ✅\n\nEm breve nossa equipe entrará em contato! 💙' };
     }
