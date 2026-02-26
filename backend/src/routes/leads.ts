@@ -7,6 +7,21 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+// Filtro comum para leads válidos (WhatsApp + Nome ou Idade)
+const validLeadFilter = {
+    telefone: { notIn: ['', 'Aguardando...'] },
+    OR: [
+        { idade: { not: null } },
+        {
+            AND: [
+                { nome: { not: null } },
+                { nome: { not: { startsWith: 'Visitante' } } },
+                { nome: { not: { startsWith: 'WhatsApp' } } }
+            ]
+        }
+    ]
+};
+
 // Listar todos os leads do usuário
 router.get('/', async (req, res) => {
     try {
@@ -16,7 +31,7 @@ router.get('/', async (req, res) => {
         const user = await prisma.user.findUnique({ where: { id: req.userId } });
         const userIsAdmin = isAdmin(user?.email);
 
-        const where: any = userIsAdmin ? {} : { userId: req.userId };
+        const where: any = userIsAdmin ? { ...validLeadFilter } : { userId: req.userId, ...validLeadFilter };
 
         if (status && status !== 'todos') {
             where.status = status;

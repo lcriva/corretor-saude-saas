@@ -7,6 +7,21 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+// Filtro comum para leads válidos (WhatsApp + Nome ou Idade)
+const validLeadFilter = {
+    telefone: { notIn: ['', 'Aguardando...'] },
+    OR: [
+        { idade: { not: null } },
+        {
+            AND: [
+                { nome: { not: null } },
+                { nome: { not: { startsWith: 'Visitante' } } },
+                { nome: { not: { startsWith: 'WhatsApp' } } }
+            ]
+        }
+    ]
+};
+
 // Estatísticas gerais do dashboard
 router.get('/stats', async (req, res) => {
     try {
@@ -24,19 +39,24 @@ router.get('/stats', async (req, res) => {
         const leadsHoje = await prisma.lead.count({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 criadoEm: { gte: hoje }
             }
         });
 
         // Total de leads
         const totalLeads = await prisma.lead.count({
-            where: whereUser
+            where: {
+                ...whereUser,
+                ...validLeadFilter
+            }
         });
 
         // Propostas enviadas no mês (Leads com status de negociação ou fechado)
         const propostasEnviadas = await prisma.lead.count({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 status: {
                     in: ['negociacao', 'fechado']
                 },
@@ -48,6 +68,7 @@ router.get('/stats', async (req, res) => {
         const vendasFechadas = await prisma.lead.count({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 status: 'fechado',
                 atualizadoEm: { gte: inicioMes }
             }
@@ -63,6 +84,7 @@ router.get('/stats', async (req, res) => {
         const vendasComValor = await prisma.lead.findMany({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 status: 'fechado',
                 atualizadoEm: { gte: inicioMes },
                 OR: [
@@ -80,10 +102,10 @@ router.get('/stats', async (req, res) => {
 
         // Pipeline
         const pipeline = {
-            novo: await prisma.lead.count({ where: { ...whereUser, status: 'novo' } }),
-            negociacao: await prisma.lead.count({ where: { ...whereUser, status: 'negociacao' } }),
-            fechado: await prisma.lead.count({ where: { ...whereUser, status: 'fechado' } }),
-            perdido: await prisma.lead.count({ where: { ...whereUser, status: 'perdido' } })
+            novo: await prisma.lead.count({ where: { ...whereUser, ...validLeadFilter, status: 'novo' } }),
+            negociacao: await prisma.lead.count({ where: { ...whereUser, ...validLeadFilter, status: 'negociacao' } }),
+            fechado: await prisma.lead.count({ where: { ...whereUser, ...validLeadFilter, status: 'fechado' } }),
+            perdido: await prisma.lead.count({ where: { ...whereUser, ...validLeadFilter, status: 'perdido' } })
         };
 
         res.json({
@@ -174,6 +196,7 @@ router.get('/alertas', async (req, res) => {
         const negociacoesParadas = await prisma.lead.findMany({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 status: 'negociacao',
                 atualizadoEm: { lte: cincoDiasAtras }
             },
@@ -184,6 +207,7 @@ router.get('/alertas', async (req, res) => {
         const leadsFrios = await prisma.lead.findMany({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 status: 'novo',
                 percentualConclusao: { lt: 100 }
             },
@@ -195,6 +219,7 @@ router.get('/alertas', async (req, res) => {
         const combinedQuentes = await prisma.lead.findMany({
             where: {
                 ...whereUser,
+                ...validLeadFilter,
                 OR: [
                     { status: 'negociacao' },
                     { percentualConclusao: 100 }
