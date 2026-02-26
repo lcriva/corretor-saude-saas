@@ -185,8 +185,8 @@ class WhatsAppService {
                 return;
             }
 
-            const msgOpcao = "1️⃣ Simular Plano Prevent Senior\n\n_👆 Responda com o número 1 para começar_";
-            const botoesIniciais = ['Simular Plano Prevent Senior'];
+            const msgOpcao = "1️⃣ Simular Plano Prevent Senior\n2️⃣ Falar com Especialista\n\n_👆 Responda com o número da opção para começar_";
+            const botoesIniciais = ['Simular Plano Prevent Senior', 'Falar com Especialista'];
 
             if (isAudio) {
                 lastButtons.set(remoteJid, botoesIniciais);
