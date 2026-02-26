@@ -68,11 +68,11 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="flex gap-4 items-center">
                         <button
-                            onClick={() => router.push('/admin/register-client')}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-colors"
+                            disabled
+                            className="bg-gray-300 cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-colors"
                         >
                             <UserPlus className="w-5 h-5" />
-                            Cadastrar Cliente
+                            Cadastrar Cliente (Inativo)
                         </button>
                         <button
                             onClick={() => router.push('/leads')}
@@ -129,7 +129,7 @@ export default function AdminDashboardPage() {
                 {/* Pipeline */}
                 <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">Pipeline de Vendas</h2>
-                    <div className="grid grid-cols-5 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                         {stats?.pipeline && Object.entries(stats.pipeline).map(([status, count]: [string, any]) => {
                             const statusColors: any = {
                                 novo: 'bg-blue-500',
@@ -141,11 +141,12 @@ export default function AdminDashboardPage() {
 
                             const statusLabels: any = {
                                 novo: 'Novo',
-                                proposta: 'Proposta',
                                 negociacao: 'Negociação',
                                 fechado: 'Fechado',
                                 perdido: 'Perdido'
                             };
+
+                            if (status === 'proposta') return null;
 
                             return (
                                 <div key={status} className="text-center">
@@ -160,7 +161,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Pipeline de Leads (Kanban Simplificado) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* LEADS FRIOS (< 100%) */}
                     <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-blue-400">
                         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -172,7 +173,7 @@ export default function AdminDashboardPage() {
                             {alertas?.leadsFrios?.map((lead: any) => (
                                 <div key={lead.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-semibold text-gray-700 text-sm truncate">{lead.nome || 'Sem nome'}</h3>
+                                        <h3 className="font-semibold text-gray-700 text-sm truncate">{lead.nome || 'Visitante'}</h3>
                                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{lead.percentualConclusao}%</span>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-2">{lead.telefone}</p>
@@ -187,48 +188,39 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
 
-                    {/* LEADS MORNOS (100% - Viu Preço) */}
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-yellow-400">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-yellow-500" />
-                            Leads Mornos
-                            <span className="text-xs font-normal text-gray-500 ml-auto">Viu Cotação</span>
-                        </h2>
-                        <div className="space-y-3">
-                            {alertas?.leadsMornos?.map((lead: any) => (
-                                <div key={lead.id} className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-semibold text-gray-800 text-sm truncate">{lead.nome}</h3>
-                                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">100%</span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mb-1">{lead.planoDesejado || 'Plano não selecionado'}</p>
-                                    <p className="text-xs font-bold text-gray-700">R$ {lead.valorPlano?.toLocaleString()}</p>
-                                </div>
-                            ))}
-                            {(!alertas?.leadsMornos || alertas.leadsMornos.length === 0) && (
-                                <p className="text-sm text-gray-400 text-center py-4">Nenhum lead morno.</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* LEADS QUENTES (Negociação) */}
+                    {/* LEADS QUENTES (Negociação ou 100%) */}
                     <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-red-500">
                         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-red-500" />
                             Leads Quentes
-                            <span className="text-xs font-normal text-gray-500 ml-auto">Quer Fechar!</span>
+                            <span className="text-xs font-normal text-gray-500 ml-auto">Prioridade por Urgência</span>
                         </h2>
                         <div className="space-y-3">
                             {alertas?.leadsQuentes?.map((lead: any) => (
                                 <div key={lead.id} className="bg-red-50 p-3 rounded-lg border border-red-100">
-
                                     <div className="flex justify-between items-start mb-1">
                                         <h3 className="font-semibold text-gray-800 text-sm truncate">{lead.nome}</h3>
-                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                        <div className="flex items-center gap-1">
+                                            {lead.urgencia && (
+                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${lead.urgencia === 'Hoje' ? 'bg-red-600 text-white' :
+                                                    lead.urgencia === 'Esta Semana' ? 'bg-orange-500 text-white' :
+                                                        'bg-gray-400 text-white'
+                                                    }`}>
+                                                    {lead.urgencia}
+                                                </span>
+                                            )}
+                                            <AlertCircle className="w-4 h-4 text-red-500" />
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-gray-500 mb-2">Interesse em fechar!</p>
-                                    <button className="w-full bg-red-600 text-white text-xs py-1.5 rounded hover:bg-red-700 transition">
-                                        Iniciar Contrato
+                                    <p className="text-xs text-gray-600 mb-1">{lead.telefone}</p>
+                                    {lead.valorPlano && (
+                                        <p className="text-xs font-bold text-red-700 mb-2">R$ {lead.valorPlano.toLocaleString()}</p>
+                                    )}
+                                    <button
+                                        onClick={() => router.push(`/leads`)}
+                                        className="w-full bg-red-600 text-white text-xs py-1.5 rounded hover:bg-red-700 transition"
+                                    >
+                                        Ver Detalhes
                                     </button>
                                 </div>
                             ))}

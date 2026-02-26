@@ -33,12 +33,12 @@ router.get('/stats', async (req, res) => {
             where: whereUser
         });
 
-        // Propostas enviadas no mês (Leads com status de proposta, negociação ou fechado)
+        // Propostas enviadas no mês (Leads com status de negociação ou fechado)
         const propostasEnviadas = await prisma.lead.count({
             where: {
                 ...whereUser,
                 status: {
-                    in: ['proposta', 'negociacao', 'fechado']
+                    in: ['negociacao', 'fechado']
                 },
                 atualizadoEm: { gte: inicioMes }
             }
@@ -81,7 +81,6 @@ router.get('/stats', async (req, res) => {
         // Pipeline
         const pipeline = {
             novo: await prisma.lead.count({ where: { ...whereUser, status: 'novo' } }),
-            proposta: await prisma.lead.count({ where: { ...whereUser, status: 'proposta' } }),
             negociacao: await prisma.lead.count({ where: { ...whereUser, status: 'negociacao' } }),
             fechado: await prisma.lead.count({ where: { ...whereUser, status: 'fechado' } }),
             perdido: await prisma.lead.count({ where: { ...whereUser, status: 'perdido' } })
@@ -192,45 +191,30 @@ router.get('/alertas', async (req, res) => {
             orderBy: { atualizadoEm: 'desc' }
         });
 
-        // Leads Mornos (100% preenchido mas ainda status = novo, ou seja, viu a proposta mas não fechou/negociou)
-        const leadsMornos = await prisma.lead.findMany({
+        // Leads Quentes (100% preenchido OU status = negociacao)
+        const combinedQuentes = await prisma.lead.findMany({
             where: {
                 ...whereUser,
-                status: 'novo',
-                percentualConclusao: 100
+                OR: [
+                    { status: 'negociacao' },
+                    { percentualConclusao: 100 }
+                ],
+                NOT: { status: 'fechado' } // Não mostrar fechados aqui
             },
-            take: 20,
+            take: 50,
             orderBy: { atualizadoEm: 'desc' }
         });
 
-        // Leads Quentes (Status = negociacao ou fechado recentemente)
-        // O usuário pediu "quando o usuário diz que tem interesse em fechar".
-        // No whatsapp.ts, quando finaliza, muda status para 'novo' mas 100%. 
-        // Vamos ajustar: Se o usuário diz "topo fechar", a IA deve setar finalizado=true.
-        // O código atual do whatsapp.ts mantem status 'novo' após finalizar proposta.
-        // Vamos considerar 'Morno' como quem completou (100%).
-        // Vamos considerar 'Quente' quem explicitamente mudamos o status para 'negociacao' (manual ou IA - precisamos garantir que IA mude para negociação)
-
-        // CORREÇÃO: No whatsapp.ts modifiquei para setar 'finalizado' com 100%.
-        // Se a IA finalizar, é um lead que viu preço. É 'Morno'.
-        // Se o usuário disser "quero fechar", a IA deveria identificar.
-        // Por enquanto, vamos usar a regra:
-        // Frio: < 100%
-        // Morno: = 100% (Viu preços)
-        // Quente: Status = 'negociacao' (Precisa ser setado manualmente ou via IA se ela detectar intenção forte)
-
-        const leadsQuentes = await prisma.lead.findMany({
-            where: {
-                ...whereUser,
-                status: 'negociacao'
-            },
-            take: 20,
-            orderBy: { atualizadoEm: 'desc' }
+        // Ordenação por urgência: "Hoje" > "Esta Semana" > "Sem Urgência" > null
+        const leadsQuentes = combinedQuentes.sort((a, b) => {
+            const priority: any = { 'Hoje': 1, 'Esta Semana': 2, 'Sem Urgência': 3 };
+            const pA = priority[a.urgencia || ''] || 99;
+            const pB = priority[b.urgencia || ''] || 99;
+            return pA - pB;
         });
 
         res.json({
             leadsFrios,
-            leadsMornos,
             leadsQuentes,
             leadsSemInteracao,
             propostasSemResposta,
