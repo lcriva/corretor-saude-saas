@@ -84,7 +84,7 @@ router.get('/:id', async (req, res) => {
 // Criar novo lead
 router.post('/', async (req, res) => {
     try {
-        const { nome, telefone, email, idade, cidade, estado, dependentes, origem, valorEstimado, valorPlano, planoDesejado, observacoes } = req.body;
+        const { nome, telefone, email, idade, cidade, estado, dependentes, origem, valorEstimado, valorPlano, planoDesejado, observacoes, urgencia } = req.body;
 
         if (!nome || !telefone || !idade || !cidade) {
             return res.status(400).json({ error: 'Nome, telefone, idade e cidade são obrigatórios' });
@@ -104,6 +104,7 @@ router.post('/', async (req, res) => {
                 valorPlano: valorPlano ? parseFloat(valorPlano) : null,
                 planoDesejado,
                 observacoes,
+                urgencia,
                 userId: req.userId!,
                 status: 'novo'
             }
@@ -127,7 +128,7 @@ router.post('/', async (req, res) => {
 // Atualizar lead
 router.put('/:id', async (req, res) => {
     try {
-        const { nome, telefone, email, idade, cidade, estado, dependentes, valorEstimado, valorPlano, planoDesejado, observacoes } = req.body;
+        const { nome, telefone, email, idade, cidade, estado, dependentes, valorEstimado, valorPlano, planoDesejado, observacoes, urgencia } = req.body;
 
         // Buscar usuário para checar se é admin
         const user = await prisma.user.findUnique({ where: { id: req.userId } });
@@ -150,6 +151,7 @@ router.put('/:id', async (req, res) => {
                 valorEstimado: valorEstimado ? parseFloat(valorEstimado) : null,
                 valorPlano: valorPlano ? parseFloat(valorPlano) : null,
                 planoDesejado,
+                urgencia,
                 observacoes
             }
         });

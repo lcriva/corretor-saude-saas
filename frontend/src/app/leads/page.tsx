@@ -33,6 +33,7 @@ export default function LeadsPage() {
         observacoes: '',
         planoDesejado: '',
         valorPlano: '',
+        urgencia: '',
         idadesDependentes: '' // String separada por vírgula para edição
     });
 
@@ -115,6 +116,7 @@ export default function LeadsPage() {
             observacoes: '',
             planoDesejado: '',
             valorPlano: '',
+            urgencia: '',
             idadesDependentes: ''
         });
     };
@@ -151,6 +153,7 @@ export default function LeadsPage() {
             observacoes: lead.observacoes || '',
             planoDesejado: lead.planoDesejado || '',
             valorPlano: lead.valorPlano?.toString() || '',
+            urgencia: lead.urgencia || '',
             idadesDependentes: (lead.idadesDependentes && Array.isArray(lead.idadesDependentes)) ? lead.idadesDependentes.join(', ') : ''
         });
         setShowModal(true);
@@ -273,6 +276,7 @@ export default function LeadsPage() {
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Criado em</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Plano / Valor</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Urgência</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Ações</th>
                                     </tr>
                                 </thead>
@@ -367,6 +371,18 @@ export default function LeadsPage() {
                                                         <span className="text-xs text-gray-500 mt-1">{lead.planoDesejado}</span>
                                                     )}
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {lead.urgencia ? (
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${lead.urgencia === 'Hoje' ? 'bg-red-100 text-red-800 border-red-200' :
+                                                        lead.urgencia === 'Esta Semana' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                                                            'bg-gray-100 text-gray-800 border-gray-200'
+                                                        }`}>
+                                                        {lead.urgencia}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">-</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
@@ -572,6 +588,22 @@ export default function LeadsPage() {
                                         min="0"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Urgência
+                                </label>
+                                <select
+                                    value={formData.urgencia}
+                                    onChange={(e) => setFormData({ ...formData, urgencia: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                >
+                                    <option value="">Não informada</option>
+                                    <option value="Hoje">Quero Contratar Hoje</option>
+                                    <option value="Esta Semana">Quero Contratar essa Semana</option>
+                                    <option value="Sem Urgência">Não tenho Urgência</option>
+                                </select>
                             </div>
 
                             <div>

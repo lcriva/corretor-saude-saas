@@ -46,6 +46,7 @@ model Lead {
   observacoes   String?
   lastFollowUpAt DateTime?
   followUpCount Int      @default(0)
+  urgencia      String?  // Novo campo: Urgência do lead
   lastButtons   Json?    // Últimas opções enviadas no WhatsApp (para tradução numérica)
   
   userId        String

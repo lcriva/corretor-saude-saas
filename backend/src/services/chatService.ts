@@ -29,6 +29,7 @@ export enum ChatStep {
     CAPTURA_NOME = 'CAPTURA_NOME',
     CAPTURA_TELEFONE = 'CAPTURA_TELEFONE',
     CONFIRMACAO = 'CONFIRMACAO',
+    URGENCIA = 'URGENCIA', // Novo step para capturar urgência
     ESPECIALISTA = 'ESPECIALISTA',
     FINISHED = 'FINISHED',
 }
@@ -49,7 +50,9 @@ export interface ChatSession {
         cidade?: string;
         planoDesejado?: string;
         valorPlano?: number;
+        urgencia?: string;
     };
+    pendingAction?: 'encaminhar' | 'confirmar';
 }
 
 const sessions = new Map<string, ChatSession>();
@@ -344,6 +347,11 @@ export class ChatService {
                     session.step = ChatStep.CAPTURA_TELEFONE;
                     return { text: 'Qual o seu *WhatsApp com DDD*?\n\nExemplo: 11999999999' };
                 }
+
+                if (session.pendingAction === 'encaminhar') {
+                    return this.encaminharEspecialista(session);
+                }
+
                 return this.gerarConfirmacao(session);
             }
 
@@ -352,6 +360,11 @@ export class ChatService {
                 const phone = messageText.replace(/\D/g, '');
                 if (phone.length < 10) return { text: 'Por favor, informe o WhatsApp com DDD (ex: 11999999999).' };
                 await this.updateLead(session.leadId, { telefone: phone });
+
+                if (session.pendingAction === 'encaminhar') {
+                    return this.encaminharEspecialista(session);
+                }
+
                 return this.gerarConfirmacao(session);
             }
 
@@ -361,8 +374,11 @@ export class ChatService {
                     return this.encaminharEspecialista(session);
                 }
                 if (text.includes('aguardar') || text.includes('contato') || text.includes('fechar')) {
-                    session.step = ChatStep.FINISHED;
-                    return { text: 'Perfeito! Nossa equipe entrará em contato em breve. 💙\n\nCaso precise de mais alguma coisa, é só chamar!' };
+                    // Se escolher aguardar, ainda perguntamos a urgência para priorizar
+                    return this.gerarConfirmacao(session);
+                }
+                if (text.includes('hoje') || text.includes('semana') || text.includes('urgencia')) {
+                    return this.handleUrgency(session, text);
                 }
                 if (text.includes('rede') || text.includes('credenciada')) {
                     return {
@@ -378,6 +394,11 @@ export class ChatService {
                         btn('Falar com especialista'),
                     ],
                 };
+            }
+
+            // ─── URGÊNCIA ─────────────────────────────────────────────────────
+            case ChatStep.URGENCIA: {
+                return this.handleUrgency(session, text);
             }
 
             // ─── ESPECIALISTA ─────────────────────────────────────────────────
@@ -422,25 +443,56 @@ export class ChatService {
     private async gerarConfirmacao(session: ChatSession): Promise<ChatResponse> {
         const score = this.calcularLeadScore(session);
         await this.updateLead(session.leadId, { leadScore: score, status: 'negociacao', percentualConclusao: 95 });
-        session.step = ChatStep.CONFIRMACAO;
+        session.step = ChatStep.URGENCIA;
         return {
             text:
-                'Obrigado! 🎉\n\n' +
-                'Um especialista da Prevent Senior vai entrar em contato com você para:\n\n' +
+                'Obrigado por fornecer seus dados. 🎉\n\n' +
+                'Um especialista da Prevent Sênior vai entrar em contato com você para:\n\n' +
                 '✔ Confirmar os valores\n' +
                 '✔ Apresentar a rede credenciada\n' +
                 '✔ Explicar as carências\n' +
                 '✔ Finalizar a contratação\n\n' +
-                'Se quiser, também posso enviar os detalhes da rede hospitalar.',
+                'Para priorizar o seu atendimento, por favor, nos diga qual a sua urgência para contratar o Plano da Prevent Sênior.',
             buttons: [
-                btn('Aguardar Contato para Fechar o Plano'),
-                btn('Ver rede credenciada', 'https://preventseniormelhoridade.com.br/#rede'),
-                btn('Falar com especialista'),
+                btn('Quero Contratar Hoje'),
+                btn('Quero Contratar essa Semana'),
+                btn('Não tenho Urgência'),
             ],
         };
     }
 
+    private async handleUrgency(session: ChatSession, text: string): Promise<ChatResponse> {
+        let urgencia = 'Não informada';
+        if (text.includes('hoje')) urgencia = 'Hoje';
+        else if (text.includes('semana')) urgencia = 'Esta Semana';
+        else if (text.includes('não') || text.includes('urgência') || text.includes('urgencia')) urgencia = 'Sem Urgência';
+
+        session.collectedData.urgencia = urgencia;
+        await this.updateLead(session.leadId, { urgencia, status: 'negociacao', percentualConclusao: 100 });
+        session.step = ChatStep.FINISHED;
+
+        return {
+            text: 'Muito obrigado! 🎉 Já recebemos sua preferência de urgência. Um consultor entrará em contato prioritariamente conforme sua escolha. 💙\n\nCaso precise de mais alguma coisa, é só chamar!'
+        };
+    }
+
     private async encaminharEspecialista(session: ChatSession): Promise<ChatResponse> {
+        const lead = await prisma.lead.findUnique({ where: { id: session.leadId } });
+        const hasValidName = lead?.nome && !lead.nome.startsWith('Visitante Site') && !lead.nome.startsWith('WhatsApp');
+        const hasValidPhone = lead ? this.isTelefoneValido(lead.telefone) : false;
+
+        if (!hasValidName) {
+            session.step = ChatStep.CAPTURA_NOME;
+            session.pendingAction = 'encaminhar';
+            return { text: 'Com certeza! Para que o especialista possa te atender melhor, qual o seu *nome completo*?' };
+        }
+
+        if (!hasValidPhone) {
+            session.step = ChatStep.CAPTURA_TELEFONE;
+            session.pendingAction = 'encaminhar';
+            return { text: `Obrigado, ${lead?.nome?.split(' ')[0]}! Agora, qual o seu *WhatsApp com DDD* para o especialista entrar em contato?\n\nExemplo: 11999999999` };
+        }
+
         await this.updateLead(session.leadId, { status: 'negociacao', percentualConclusao: 100 });
         session.step = ChatStep.ESPECIALISTA;
         return { text: 'Vou encaminhar você agora para um especialista. Aguarde um momento... ✅\n\nEm breve nossa equipe entrará em contato! 💙' };
