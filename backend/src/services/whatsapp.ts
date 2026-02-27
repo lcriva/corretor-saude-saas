@@ -110,7 +110,7 @@ class WhatsAppService {
             if (activeLeadId) {
                 const lead = await prisma.lead.findUnique({ where: { id: activeLeadId } });
                 // Se o lead ainda for "novo", passamos para "negociacao" pois houve intervenção manual
-                if (lead && lead.status === 'novo' && lead.percentualConclusao < 100) {
+                if (lead && lead.status === 'novo') {
                     console.log(`   🛠️ Intervenção humana detectada para ${lead.nome}. Bot silenciado.`);
                     await prisma.lead.update({
                         where: { id: activeLeadId },
@@ -122,11 +122,38 @@ class WhatsAppService {
             return;
         }
 
-        // ── 0.1. CHECK DE SILÊNCIO (LEADS JÁ EM ATENDIMENTO MANUAL) ────────
+        const isMedia = !!(message.message?.imageMessage ||
+            message.message?.videoMessage ||
+            message.message?.audioMessage ||
+            message.message?.documentMessage ||
+            message.message?.stickerMessage);
+
+        // ── 0.1. CHECK DE SILÊNCIO (LEADS JÁ EM ATENDIMENTO MANUAL OU FINALIZADOS) ────────
         // Se já existe um lead para esse número que NÃO é "novo", o bot não deve interagir
         const silentLeadId = await this.findActiveLeadId(remoteJid);
         if (silentLeadId) {
             const silentLead = await prisma.lead.findUnique({ where: { id: silentLeadId } });
+
+            // Se o lead enviou mídia, consideramos intervenção manual necessária
+            if (isMedia && silentLead && silentLead.status === 'novo') {
+                console.log(`   📸 Mídia detectada de ${silentLead.nome}. Movendo para negociação e silenciando bot.`);
+
+                await prisma.interacao.create({
+                    data: {
+                        tipo: 'whatsapp',
+                        descricao: '[Mídia] Cliente enviou uma imagem/vídeo/áudio',
+                        leadId: silentLeadId
+                    }
+                });
+
+                await prisma.lead.update({
+                    where: { id: silentLeadId },
+                    data: { status: 'negociacao', observacoes: (silentLead.observacoes || '') + '\n[Sistema] Cliente enviou mídia - bot silenciado' }
+                });
+                conversations.delete(remoteJid);
+                return;
+            }
+
             if (silentLead && (silentLead.status !== 'novo' || silentLead.percentualConclusao >= 100)) {
                 // Silêncio absoluto - não registra nem log para não poluir
                 return;
@@ -264,8 +291,7 @@ class WhatsAppService {
             const lead = await prisma.lead.findFirst({
                 where: {
                     OR: [{ telefone: raw }, { telefone: formatted }],
-                    percentualConclusao: { lt: 100 },
-                    status: { notIn: ['finalizado', 'fechado', 'perdido'] }
+                    status: { notIn: ['fechado', 'perdido'] }
                 },
                 orderBy: { criadoEm: 'desc' }
             });
@@ -407,8 +433,8 @@ class WhatsAppService {
 
             try {
                 const lead = await prisma.lead.findUnique({ where: { id: state.leadId } });
-                if (!lead || ['finalizado', 'negociacao', 'perdido'].includes(lead.status) || lead.percentualConclusao >= 100) {
-                    if (tempoInativo >= 30 * 60 * 1000) conversations.delete(remoteJid);
+                if (!lead || lead.status !== 'novo' || lead.percentualConclusao >= 100) {
+                    if (tempoInativo >= 15 * 60 * 1000) conversations.delete(remoteJid);
                     continue;
                 }
 
