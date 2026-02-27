@@ -110,10 +110,16 @@ class WhatsAppService {
         // ── 0. RESOLUÇÃO DE JID REAL (IMEDIATA) ─────────────────────────────
         let realJid = remoteJid;
         if (remoteJid.endsWith('@lid')) {
-            const participant = message.key.participant || message.participant || message.message?.contextInfo?.participant;
+            // Tentamos extrair o número real de qualquer lugar possível no objeto da mensagem
+            const p1 = message.key.participant;
+            const p2 = message.participant;
+            const p3 = message.message?.contextInfo?.participant;
+            const p4 = message.message?.extendedTextMessage?.contextInfo?.participant;
+
+            const participant = p1 || p2 || p3 || p4;
             if (participant && participant.endsWith('@s.whatsapp.net')) {
                 realJid = participant;
-                console.log(`   💡 ID Mascarado (@lid) detectado cedo. Número real: ${realJid}`);
+                console.log(`   💡 ID Mascarado (@lid) resolvido para: ${realJid}`);
             }
         }
 
@@ -145,74 +151,62 @@ class WhatsAppService {
 
         // ── 3. DETECÇÃO DE INTERVENÇÃO / SILÊNCIO (MODO SESSÃO) ──────────────
 
-        // 3.1. Se for Gatilho ou Restart, NUNCA silencia E RESETA o lead
+        // ── 3. DETECÇÃO DE SILÊNCIO E INTERVENÇÃO ───────────────────────────
+
+        // 3.1. Se for mensagem do próprio bot (fromMe), verificamos se é automatizada ou manual
+        if (message.key.fromMe) {
+            const msgId = message.key.id;
+            // Se o ID está no nosso Set, foi o bot quem mandou. Apenas limpamos o Set.
+            if (msgId && botSentMessageIds.has(msgId)) {
+                botSentMessageIds.delete(msgId);
+                return;
+            }
+            // Se NÃO está no Set, foi uma intervenção manual do corretor no celular/web
+            if (lead && lead.status === 'novo') {
+                console.log(`   🛠️ Intervenção humana MANUAL detectada para ${lead.nome}. Bot silenciado.`);
+                await prisma.lead.update({ where: { id: lead.id }, data: { status: 'negociacao' } });
+            }
+            conversations.delete(realJid);
+            return;
+        }
+
+        // 3.2. Se for Gatilho ou Restart (bypass total de silêncio para permitir recomeçar)
         if (ehGatilho || isRestart) {
-            console.log(`   🚀 Gatilho ou Restart detectado ("${messageText}"). Bypassing silêncio e resetando lead.`);
+            console.log(`   🚀 Gatilho ou Restart detectado. Bypassing silêncio e resetando lead.`);
             conversations.delete(realJid);
             if (activeLeadId) {
-                // Reset no Banco
                 await prisma.lead.update({
                     where: { id: activeLeadId },
                     data: { status: 'novo', percentualConclusao: 10, lastFollowUpAt: null, followUpCount: 0 }
                 }).catch(() => { });
-
-                // Reset no ChatService
                 chatService.resetSession(activeLeadId);
             }
-            // Continua o fluxo normal para cair na saudação/reinício
+            // Continua para o fluxo normal de saudação
         } else {
-            // 3.2. Se a mensagem for do PRÓPRIO CORRETOR (fromMe)
-            if (message.key.fromMe) {
-                const msgId = message.key.id;
+            // 3.3. REGRAS DE SILÊNCIO (CONVERSA MANUAL OU FINALIZADA)
+            const isFinishedOrManual = lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100);
+            const hasActiveSession = conversations.has(realJid);
 
-                // Se o ID da mensagem NÃO estiver no nosso SET de mensagens do bot, 
-                // então é uma intervenção humana manual.
-                if (msgId && !botSentMessageIds.has(msgId)) {
-                    if (lead && lead.status === 'novo') {
-                        console.log(`   🛠️ Intervenção humana MANUAL detectada para ${lead.nome}. Bot silenciado.`);
-                        await prisma.lead.update({ where: { id: lead.id }, data: { status: 'negociacao' } });
-                    }
-                    conversations.delete(realJid);
-                    return;
-                }
-
-                // Se for uma mensagem do bot (está no Set), limpamos o ID e ignoramos o evento
-                if (msgId) botSentMessageIds.delete(msgId);
+            // A) Silêncio absoluto se o lead já foi atendido ou terminou o fluxo, e não há sessão ativa
+            if (isFinishedOrManual && !hasActiveSession) {
+                console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} em modo manual/finalizado. Silêncio absoluto.`);
                 return;
             }
 
-            // 3.3. Se existe uma conversação ATIVA em memória (usando REAL JID), permitimos continuar
-            // Isso evita que o bot se silencie no passo 2 de um fluxo que acabou de começar através de um gatilho
-            const hasActiveSession = conversations.has(realJid);
-
-            if (!hasActiveSession) {
-                // Se NÃO tem sessão ativa, verificamos se o lead está em modo silêncio no banco
-
-                const isMedia = !!(message.message?.imageMessage ||
-                    message.message?.videoMessage ||
-                    message.message?.audioMessage ||
-                    message.message?.documentMessage ||
-                    message.message?.stickerMessage);
-
-                // A) Silêncio para leads já em atendimento manual ou finalizados
-                if (lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100)) {
-                    if (isMedia) {
-                        await prisma.interacao.create({
-                            data: { tipo: 'whatsapp', descricao: '[Mídia] Cliente enviou anexo durante atendimento manual', leadId: lead.id }
-                        });
-                    }
-                    return;
-                }
-
-                // B) Se o cliente enviar MÍDIA no início (status 'novo' mas sem sessão)
-                if (isMedia && lead && lead.status === 'novo') {
-                    console.log(`   📸 Mídia detectada de ${lead.nome}. Bot silenciado.`);
+            // B) Silêncio para mídias (fotos/áudios) fora de um fluxo ativo
+            // Importante: Silencia mesmo que o lead não seja encontrado, para evitar responder "perdi conexão" para imagens
+            const isMedia = !!(message.message?.imageMessage || message.message?.videoMessage || message.message?.audioMessage || message.message?.documentMessage || message.message?.stickerMessage);
+            if (isMedia && !hasActiveSession) {
+                if (lead && lead.status === 'novo') {
+                    console.log(`   📸 Mídia detectada no início. Silenciando bot para não atrapalhar o humano.`);
                     await prisma.lead.update({
                         where: { id: lead.id },
                         data: { status: 'negociacao', observacoes: (lead.observacoes || '') + '\n[Sistema] Cliente enviou mídia - bot silenciado' }
                     });
-                    return;
+                } else if (!lead) {
+                    console.log(`   📸 Mídia de desconhecido detectada. Mantendo silêncio.`);
                 }
+                return;
             }
         }
 
