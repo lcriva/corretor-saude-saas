@@ -86,8 +86,13 @@ export class ChatService {
 
         if (messageText) await this.saveInteraction(leadId, 'user', messageText);
 
+        // Limpeza básica para lidar com emojis de números e espaços extras
+        const cleanText = messageText.trim()
+            .replace(/[1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣7️⃣8️⃣9️⃣0️⃣]/g, (m) => m[0])
+            .toLowerCase();
+
         try {
-            const response = await this.handleStep(session, messageText);
+            const response = await this.handleStep(session, cleanText);
             await this.saveInteraction(leadId, 'assistant', response.text);
             return response;
         } catch (error) {

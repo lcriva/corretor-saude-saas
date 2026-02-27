@@ -272,14 +272,14 @@ class WhatsAppService {
 
             conversation = { userId, leadId, lastInteraction: Date.now(), reminded: false };
             conversations.set(realJid, conversation);
-            await this.processarResposta(remoteJid, "", conversation);
+            await this.processarResposta(remoteJid, realJid, "", conversation);
             return;
         }
 
         // ── 4. CONTINUAR CONVERSA ATIVA ────────────────────────────────────────
         conversation.lastInteraction = Date.now();
         conversation.reminded = false;
-        await this.processarResposta(remoteJid, textoFinal, conversation);
+        await this.processarResposta(remoteJid, realJid, textoFinal, conversation);
 
         // Se após processar, o lead atingiu 100%, removemos da memória para liberar para o humano
         const finalLead = await prisma.lead.findUnique({ where: { id: conversation.leadId } });
@@ -313,7 +313,7 @@ class WhatsAppService {
         }
     }
 
-    private async processarResposta(remoteJid: string, textoUsuario: string, conversation: ConversationState) {
+    private async processarResposta(remoteJid: string, realJid: string, textoUsuario: string, conversation: ConversationState) {
         if (!conversation.leadId) return;
 
         try {
@@ -323,13 +323,13 @@ class WhatsAppService {
             // Persistência de botões para próxima interação
             const labels = chatResponse.buttons?.map(b => b.label) ?? [];
             if (labels.length > 0) {
-                lastButtons.set(remoteJid, labels);
+                lastButtons.set(realJid, labels);
                 await prisma.lead.update({
                     where: { id: conversation.leadId },
                     data: { lastButtons: labels }
                 }).catch(() => { });
             } else {
-                lastButtons.delete(remoteJid);
+                lastButtons.delete(realJid);
                 await prisma.lead.update({
                     where: { id: conversation.leadId },
                     data: { lastButtons: [] }
@@ -350,15 +350,15 @@ class WhatsAppService {
             await this.enviarMensagem(remoteJid, mensagemFinal.trimEnd());
 
             // Sincroniza etiqueta após interação
-            this.syncLeadLabel(remoteJid, conversation.leadId).catch(() => { });
+            this.syncLeadLabel(realJid, conversation.leadId).catch(() => { });
         } catch (error) {
             console.error('❌ Erro processarResposta:', error);
             await this.enviarMensagem(remoteJid, "Ops, tive um problema técnico. Pode repetir?");
         }
     }
 
-    private async getOrCreateLead(remoteJid: string, userId?: string): Promise<string | undefined> {
-        const telefoneRaw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '').replace('@s.whatsapp.net', '');
+    private async getOrCreateLead(realJid: string, userId?: string): Promise<string | undefined> {
+        const telefoneRaw = realJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
 
         // Se temos um realJid passado, ele tem prioridade
         const formatarTelefone = (raw: string): string => {
@@ -402,7 +402,7 @@ class WhatsAppService {
             });
 
             // Etiqueta inicial como Frio
-            this.syncLeadLabel(remoteJid, novoLead.id).catch(() => { });
+            this.syncLeadLabel(realJid, novoLead.id).catch(() => { });
 
             return novoLead.id;
         } catch (error) {
