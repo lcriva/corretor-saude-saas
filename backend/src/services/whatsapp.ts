@@ -142,10 +142,23 @@ class WhatsAppService {
 
         // ── 3. DETECÇÃO DE INTERVENÇÃO / SILÊNCIO ────────────────────────────
 
-        // 3.1. Se for Gatilho ou Restart, NUNCA silencia
+        // 3.1. Se for Gatilho ou Restart, NUNCA silencia E RESETA o lead no banco
         if (ehGatilho || isRestart) {
-            console.log(`   🚀 Gatilho ou Restart detectado ("${messageText}"). Bypassing silêncio.`);
+            console.log(`   🚀 Gatilho ou Restart detectado ("${messageText}"). Bypassing silêncio e resetando lead.`);
             conversations.delete(remoteJid);
+
+            // Resetar o lead no banco para o bot ter permissão de continuar conversando nos próximos passos
+            if (activeLeadId) {
+                await prisma.lead.update({
+                    where: { id: activeLeadId },
+                    data: {
+                        status: 'novo',
+                        percentualConclusao: 10,
+                        lastFollowUpAt: null,
+                        followUpCount: 0
+                    }
+                }).catch(err => console.error('   ❌ Falha ao resetar lead no Gatilho:', err));
+            }
             // Continua o fluxo normal para cair na saudação/reinício
         } else {
             // 3.2. Se a mensagem for do PRÓPRIO CORRETOR (fromMe)
