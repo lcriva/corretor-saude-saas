@@ -76,6 +76,10 @@ export class ChatService {
         return session;
     }
 
+    resetSession(leadId: string) {
+        sessions.delete(leadId);
+    }
+
     async processUserMessage(leadId: string, messageText: string): Promise<ChatResponse> {
         const session = await this.getOrCreateSession(leadId);
         session.lastInteraction = Date.now();

@@ -145,12 +145,16 @@ class WhatsAppService {
         // 3.1. Se for Gatilho ou Restart, NUNCA silencia E RESETA o lead
         if (ehGatilho || isRestart) {
             console.log(`   🚀 Gatilho ou Restart detectado ("${messageText}"). Bypassing silêncio e resetando lead.`);
-            conversations.delete(remoteJid);
+            conversations.delete(realJid);
             if (activeLeadId) {
+                // Reset no Banco
                 await prisma.lead.update({
                     where: { id: activeLeadId },
                     data: { status: 'novo', percentualConclusao: 10, lastFollowUpAt: null, followUpCount: 0 }
                 }).catch(() => { });
+
+                // Reset no ChatService
+                chatService.resetSession(activeLeadId);
             }
             // Continua o fluxo normal para cair na saudação/reinício
         } else {
@@ -164,9 +168,9 @@ class WhatsAppService {
                 return;
             }
 
-            // 3.3. Se existe uma conversação ATIVA em memória, permitimos continuar
+            // 3.3. Se existe uma conversação ATIVA em memória (usando REAL JID), permitimos continuar
             // Isso evita que o bot se silencie no passo 2 de um fluxo que acabou de começar através de um gatilho
-            const hasActiveSession = conversations.has(remoteJid);
+            const hasActiveSession = conversations.has(realJid);
 
             if (!hasActiveSession) {
                 // Se NÃO tem sessão ativa, verificamos se o lead está em modo silêncio no banco
@@ -203,20 +207,20 @@ class WhatsAppService {
         console.log(`\n📩 [WA] Mensagem de ${remoteJid}${realJid !== remoteJid ? ` (${realJid})` : ''}: "${messageText}"`);
 
         // ── 4. RECUPERAÇÃO DE SESSÃO / LEAD (IMEDIATA) ─────────────────────
-        let conversation = conversations.get(remoteJid);
+        let conversation = conversations.get(realJid);
         if (!conversation) {
             if (activeLeadId) {
                 const leadDados = await prisma.lead.findUnique({ where: { id: activeLeadId } });
                 if (leadDados?.lastButtons && Array.isArray(leadDados.lastButtons)) {
-                    lastButtons.set(remoteJid, leadDados.lastButtons as string[]);
+                    lastButtons.set(realJid, leadDados.lastButtons as string[]);
                 }
                 conversation = { userId, leadId: activeLeadId, lastInteraction: Date.now(), reminded: false };
-                conversations.set(remoteJid, conversation);
+                conversations.set(realJid, conversation);
             }
         }
 
         // ── 5. TRADUÇÃO DE NÚMERO → LABEL DE BOTÃO ─────────────────────────────
-        const botoesAtivos = lastButtons.get(remoteJid) ?? [];
+        const botoesAtivos = lastButtons.get(realJid) ?? [];
         const textoLimpo = messageText.trim().replace(/[️⃣.\)\-]/g, '').trim();
         const numeroDigitado = parseInt(textoLimpo, 10);
         let textoFinal = messageText;
@@ -230,7 +234,8 @@ class WhatsAppService {
         const isRestartFinal = msgLimpa === 'recomecar' || msgLimpa === 'restart' || msgLimpa === 'voltar ao inicio';
 
         if (isRestartFinal) {
-            conversations.delete(remoteJid);
+            conversations.delete(realJid);
+            if (conversation?.leadId) chatService.resetSession(conversation.leadId);
             conversation = undefined;
         }
 
@@ -266,7 +271,7 @@ class WhatsAppService {
             if (!leadId) return;
 
             conversation = { userId, leadId, lastInteraction: Date.now(), reminded: false };
-            conversations.set(remoteJid, conversation);
+            conversations.set(realJid, conversation);
             await this.processarResposta(remoteJid, "", conversation);
             return;
         }
@@ -280,7 +285,7 @@ class WhatsAppService {
         const finalLead = await prisma.lead.findUnique({ where: { id: conversation.leadId } });
         if (finalLead && (finalLead.percentualConclusao >= 100 || ['negociacao', 'fechado', 'perdido'].includes(finalLead.status))) {
             console.log(`   🔕 Lead ${finalLead.nome} finalizado/qualificado. Ativando Modo Silêncio.`);
-            conversations.delete(remoteJid);
+            conversations.delete(realJid);
         }
     }
 
