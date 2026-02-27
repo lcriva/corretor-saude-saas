@@ -104,20 +104,31 @@ class WhatsAppService {
         const remoteJid = message.key.remoteJid;
         if (remoteJid?.endsWith('@g.us') || remoteJid === 'status@broadcast') return;
 
-        // ── 0. DETECÇÃO DE INTERVENÇÃO HUMANA (FROM ME) ─────────────────────
+        // ── 0. RESOLUÇÃO DE JID REAL (IMEDIATA) ─────────────────────────────
+        let realJid = remoteJid;
+        if (remoteJid.endsWith('@lid')) {
+            const participant = message.key.participant || message.participant || message.message?.contextInfo?.participant;
+            if (participant && participant.endsWith('@s.whatsapp.net')) {
+                realJid = participant;
+                console.log(`   💡 ID Mascarado (@lid) detectado cedo. Número real: ${realJid}`);
+            }
+        }
+
+        // ── 1. BUSCA DE LEAD ATIVO (O MAIS CEDO POSSÍVEL) ────────────────────
+        const activeLeadId = await this.findActiveLeadId(realJid);
+        const lead = activeLeadId ? await prisma.lead.findUnique({ where: { id: activeLeadId } }) : null;
+
+        // ── 2. DETECÇÃO DE INTERVENÇÃO / SILÊNCIO ────────────────────────────
+
+        // 2.1. Se a mensagem for do PRÓPRIO CORRETOR (fromMe)
         if (message.key.fromMe) {
-            const activeLeadId = await this.findActiveLeadId(remoteJid);
-            if (activeLeadId) {
-                const lead = await prisma.lead.findUnique({ where: { id: activeLeadId } });
-                // Se o lead ainda for "novo", passamos para "negociacao" pois houve intervenção manual
-                if (lead && lead.status === 'novo') {
-                    console.log(`   🛠️ Intervenção humana detectada para ${lead.nome}. Bot silenciado.`);
-                    await prisma.lead.update({
-                        where: { id: activeLeadId },
-                        data: { status: 'negociacao' }
-                    });
-                    conversations.delete(remoteJid);
-                }
+            if (lead && lead.status === 'novo') {
+                console.log(`   🛠️ Intervenção humana detectada para ${lead.nome}. Bot silenciado.`);
+                await prisma.lead.update({
+                    where: { id: lead.id },
+                    data: { status: 'negociacao' }
+                });
+                conversations.delete(remoteJid);
             }
             return;
         }
@@ -128,49 +139,40 @@ class WhatsAppService {
             message.message?.documentMessage ||
             message.message?.stickerMessage);
 
-        // ── 0.1. CHECK DE SILÊNCIO (LEADS JÁ EM ATENDIMENTO MANUAL OU FINALIZADOS) ────────
-        // Se já existe um lead para esse número que NÃO é "novo", o bot não deve interagir
-        const silentLeadId = await this.findActiveLeadId(remoteJid);
-        if (silentLeadId) {
-            const silentLead = await prisma.lead.findUnique({ where: { id: silentLeadId } });
-
-            // Se o lead enviou mídia, consideramos intervenção manual necessária
-            if (isMedia && silentLead && silentLead.status === 'novo') {
-                console.log(`   📸 Mídia detectada de ${silentLead.nome}. Movendo para negociação e silenciando bot.`);
-
+        // 2.2. Silêncio para leads já em atendimento manual ou finalizados
+        if (lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100)) {
+            // Se enviar mídia em atendimento manual, apenas logamos no histórico e silenciamos
+            if (isMedia) {
                 await prisma.interacao.create({
                     data: {
                         tipo: 'whatsapp',
-                        descricao: '[Mídia] Cliente enviou uma imagem/vídeo/áudio',
-                        leadId: silentLeadId
+                        descricao: '[Mídia] Cliente enviou anexo durante atendimento manual',
+                        leadId: lead.id
                     }
                 });
-
-                await prisma.lead.update({
-                    where: { id: silentLeadId },
-                    data: { status: 'negociacao', observacoes: (silentLead.observacoes || '') + '\n[Sistema] Cliente enviou mídia - bot silenciado' }
-                });
-                conversations.delete(remoteJid);
-                return;
             }
-
-            if (silentLead && (silentLead.status !== 'novo' || silentLead.percentualConclusao >= 100)) {
-                // Silêncio absoluto - não registra nem log para não poluir
-                return;
-            }
+            return;
         }
 
-        // Tentar extrair o número real se o JID for mascarado (@lid)
-        let realJid = remoteJid;
-        if (remoteJid.endsWith('@lid')) {
-            // Em alguns casos de anúncio, o número real pode vir no participant ou no contextInfo
-            const participant = message.key.participant || message.participant || message.message?.contextInfo?.participant;
-            if (participant && participant.endsWith('@s.whatsapp.net')) {
-                realJid = participant;
-                console.log(`   💡 ID Mascarado (@lid) detectado. Número real extraído: ${realJid}`);
-            }
+        // 2.3. Se o cliente enviar MÍDIA enquanto o bot ainda está no controle ('novo')
+        if (isMedia && lead && lead.status === 'novo') {
+            console.log(`   📸 Mídia detectada de ${lead.nome}. Movendo para negociação e silenciando bot.`);
+            await prisma.interacao.create({
+                data: {
+                    tipo: 'whatsapp',
+                    descricao: '[Mídia] Cliente enviou uma imagem/vídeo/áudio - Bot silenciado',
+                    leadId: lead.id
+                }
+            });
+            await prisma.lead.update({
+                where: { id: lead.id },
+                data: { status: 'negociacao', observacoes: (lead.observacoes || '') + '\n[Sistema] Cliente enviou mídia - bot silenciado' }
+            });
+            conversations.delete(remoteJid);
+            return;
         }
 
+        // ── 3. PROCESSAMENTO TEXTUAL ──────────────────────────────────────────
         const messageText = message.message?.conversation ||
             message.message?.extendedTextMessage?.text ||
             message.message?.imageMessage?.caption ||
@@ -178,24 +180,23 @@ class WhatsAppService {
 
         const isAudio = !!message.message?.audioMessage;
 
-        console.log(`\n📩 [WA] Mensagem de ${remoteJid}: "${messageText}"`);
+        console.log(`\n📩 [WA] Mensagem de ${remoteJid}${realJid !== remoteJid ? ` (${realJid})` : ''}: "${messageText}"`);
 
         const normalizar = (t: string) => t.trim().toLowerCase()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             .replace(/[^\w\s]/g, '')
             .replace(/\s+/g, ' ');
 
-        // ── 1. RECUPERAÇÃO DE SESSÃO / LEAD (IMEDIATA) ─────────────────────
+        // ── 4. RECUPERAÇÃO DE SESSÃO / LEAD (IMEDIATA) ─────────────────────
         let conversation = conversations.get(remoteJid);
         if (!conversation) {
-            const leadAtivoId = await this.findActiveLeadId(realJid);
-            if (leadAtivoId) {
-                const leadDados = await prisma.lead.findUnique({ where: { id: leadAtivoId } });
+            if (activeLeadId) {
+                const leadDados = await prisma.lead.findUnique({ where: { id: activeLeadId } });
                 if (leadDados?.lastButtons && Array.isArray(leadDados.lastButtons)) {
                     lastButtons.set(remoteJid, leadDados.lastButtons as string[]);
                     console.log(`   🔄 Botões recuperados do banco: [${(leadDados.lastButtons as string[]).join(', ')}]`);
                 }
-                conversation = { userId, leadId: leadAtivoId, lastInteraction: Date.now(), reminded: false };
+                conversation = { userId, leadId: activeLeadId, lastInteraction: Date.now(), reminded: false };
                 conversations.set(remoteJid, conversation);
             }
         }
@@ -290,7 +291,7 @@ class WhatsAppService {
         try {
             const lead = await prisma.lead.findFirst({
                 where: {
-                    OR: [{ telefone: raw }, { telefone: formatted }],
+                    OR: [{ telefone: raw }, { telefone: formatted }, { telefone: digits }],
                     status: { notIn: ['fechado', 'perdido'] }
                 },
                 orderBy: { criadoEm: 'desc' }
