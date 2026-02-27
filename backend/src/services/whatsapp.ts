@@ -110,13 +110,17 @@ class WhatsAppService {
         // ── 0. RESOLUÇÃO DE JID REAL (IMEDIATA) ─────────────────────────────
         let realJid = remoteJid;
         if (remoteJid.endsWith('@lid')) {
-            // Tentamos extrair o número real de qualquer lugar possível no objeto da mensagem
-            const p1 = message.key.participant;
-            const p2 = message.participant;
-            const p3 = message.message?.contextInfo?.participant;
-            const p4 = message.message?.extendedTextMessage?.contextInfo?.participant;
+            // Buscamos o JID real (@s.whatsapp.net) em todas as localizações possíveis do objeto Baileys
+            const participant =
+                message.key?.participant ||
+                message.participant ||
+                message.message?.contextInfo?.participant ||
+                message.message?.extendedTextMessage?.contextInfo?.participant ||
+                message.message?.imageMessage?.contextInfo?.participant ||
+                message.message?.audioMessage?.contextInfo?.participant ||
+                message.message?.videoMessage?.contextInfo?.participant ||
+                message.message?.documentMessage?.contextInfo?.participant;
 
-            const participant = p1 || p2 || p3 || p4;
             if (participant && participant.endsWith('@s.whatsapp.net')) {
                 realJid = participant;
                 console.log(`   💡 ID Mascarado (@lid) resolvido para: ${realJid}`);
@@ -140,13 +144,15 @@ class WhatsAppService {
 
         const msgLimpaOriginal = normalizar(messageText);
         const gatilhos = [
-            'oi quero um plano de saude',
-            'ola gostaria de uma cotacao do prevent senior',
             'quero um plano de saude',
             'cotacao prevent senior',
-            'simular plano prevent senior'
+            'simular plano prevent senior',
+            'ola gostaria de uma cotacao',
+            'gostaria de uma simulacao'
         ];
-        const ehGatilho = gatilhos.some(g => msgLimpaOriginal.includes(g));
+
+        // ehGatilho agora é mais estrito: a mensagem deve CONTER o gatilho, mas "oi" sozinho não é gatilho
+        const ehGatilho = gatilhos.some(g => msgLimpaOriginal.includes(g)) || msgLimpaOriginal === 'comecar' || msgLimpaOriginal === 'simular';
         const isRestart = msgLimpaOriginal === 'recomecar' || msgLimpaOriginal === 'restart' || msgLimpaOriginal === 'voltar ao inicio';
 
         // ── 3. DETECÇÃO DE INTERVENÇÃO / SILÊNCIO (MODO SESSÃO) ──────────────
@@ -269,8 +275,17 @@ class WhatsAppService {
             }
 
             if (!ehGatilho) {
-                lastButtons.set(remoteJid, botoesIniciais);
-                await this.enviarMensagem(remoteJid, "Olá! 👋 Como passou um tempo, perdi nossa conexão.\n\n" + msgOpcao);
+                // SÓ envia mensagem de "reconexão" se for um lead CONHECIDO e que NÃO está em silêncio
+                // Se for um desconhecido mandando "Oi", simplesmente ignoramos para manter silêncio total.
+                if (activeLeadId) {
+                    const isFinishedOrManualRel = lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100);
+                    if (!isFinishedOrManualRel) {
+                        lastButtons.set(remoteJid, botoesIniciais);
+                        await this.enviarMensagem(remoteJid, "Olá! 👋 Como passou um tempo, perdi nossa conexão.\n\n" + msgOpcao);
+                    } else {
+                        console.log(`   🔕 Lead conhecido mas silenciado. Ignorando "reconexão".`);
+                    }
+                }
                 return;
             }
 
