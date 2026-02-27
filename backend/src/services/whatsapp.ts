@@ -29,6 +29,9 @@ const lastButtons = new Map<string, string[]>();
 // Mapa de etiquetas do WhatsApp (Nome -> ID)
 const whatsappLabels = new Map<string, string>();
 
+// IDs de mensagens enviadas pelo bot (para distinguir de intervenção manual)
+const botSentMessageIds = new Set<string>();
+
 class WhatsAppService {
     private sock: any = null;
     private qrCodeData: string = '';
@@ -158,13 +161,23 @@ class WhatsAppService {
             }
             // Continua o fluxo normal para cair na saudação/reinício
         } else {
-            // 3.2. Se a mensagem for do PRÓPRIO CORRETOR (fromMe), silencia IMEDIATAMENTE
+            // 3.2. Se a mensagem for do PRÓPRIO CORRETOR (fromMe)
             if (message.key.fromMe) {
-                if (lead && lead.status === 'novo') {
-                    console.log(`   🛠️ Intervenção humana detectada para ${lead.nome}. Bot silenciado.`);
-                    await prisma.lead.update({ where: { id: lead.id }, data: { status: 'negociacao' } });
+                const msgId = message.key.id;
+
+                // Se o ID da mensagem NÃO estiver no nosso SET de mensagens do bot, 
+                // então é uma intervenção humana manual.
+                if (msgId && !botSentMessageIds.has(msgId)) {
+                    if (lead && lead.status === 'novo') {
+                        console.log(`   🛠️ Intervenção humana MANUAL detectada para ${lead.nome}. Bot silenciado.`);
+                        await prisma.lead.update({ where: { id: lead.id }, data: { status: 'negociacao' } });
+                    }
+                    conversations.delete(realJid);
+                    return;
                 }
-                conversations.delete(remoteJid);
+
+                // Se for uma mensagem do bot (está no Set), limpamos o ID e ignoramos o evento
+                if (msgId) botSentMessageIds.delete(msgId);
                 return;
             }
 
@@ -414,7 +427,18 @@ class WhatsAppService {
     async enviarMensagem(numero: string, mensagem: string) {
         try {
             if (!this.sock) throw new Error('WhatsApp não conectado');
-            await this.sock.sendMessage(numero, { text: mensagem });
+            const sent = await this.sock.sendMessage(numero, { text: mensagem });
+
+            // Registra o ID da mensagem para não ser interpretado como intervenção manual depois
+            if (sent?.key?.id) {
+                botSentMessageIds.add(sent.key.id);
+                // Limpeza automática para evitar vazamento de memória (mantém apenas os últimos 1000 IDs)
+                if (botSentMessageIds.size > 1000) {
+                    const firstId = botSentMessageIds.values().next().value;
+                    if (firstId) botSentMessageIds.delete(firstId);
+                }
+            }
+            return sent;
         } catch (error) {
             console.error('❌ Erro enviarMensagem:', error);
             throw error;
