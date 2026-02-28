@@ -317,17 +317,47 @@ class WhatsAppService {
 
     private async findActiveLeadId(remoteJid: string): Promise<string | null> {
         const raw = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
-        const digits = raw.startsWith('55') ? raw.slice(2) : raw;
-        const formatted = digits.length === 11
-            ? `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-            : digits.length === 10
-                ? `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
-                : raw;
+
+        // Normalização para busca flexível (com e sem nono dígito)
+        const getVariations = (num: string) => {
+            const digits = num.startsWith('55') ? num.slice(2) : num;
+            const variations = new Set<string>([num, digits]);
+
+            const format = (d: string) => {
+                if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+                if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+                return d;
+            };
+
+            variations.add(format(digits));
+
+            if (digits.length === 11 && digits[2] === '9') {
+                const without9 = digits.slice(0, 2) + digits.slice(3);
+                variations.add(without9);
+                variations.add('55' + without9);
+                variations.add(format(without9));
+            } else if (digits.length === 10) {
+                const with9 = digits.slice(0, 2) + '9' + digits.slice(2);
+                variations.add(with9);
+                variations.add('55' + with9);
+                variations.add(format(with9));
+            }
+            return Array.from(variations);
+        };
+
+        const searchNumbers = getVariations(raw);
+        console.log(`🔍 [findActiveLeadId] Buscando variações: ${searchNumbers.join(', ')}`);
 
         try {
             const lead = await prisma.lead.findFirst({
                 where: {
-                    OR: [{ telefone: raw }, { telefone: formatted }, { telefone: digits }],
+                    OR: [
+                        { telefone: { in: searchNumbers } },
+                        // Fallback para conter os últimos dígitos caso haja formatação bizarra
+                        ...searchNumbers.filter(n => n.length >= 8 && !n.includes('(')).map(n => ({
+                            telefone: { contains: n.slice(-8) }
+                        }))
+                    ],
                     status: { notIn: ['fechado', 'perdido'] }
                 },
                 orderBy: { criadoEm: 'desc' }
