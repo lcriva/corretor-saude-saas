@@ -79,7 +79,7 @@ router.get('/stats', async (req, res) => {
             ? parseFloat(((vendasFechadas / propostasEnviadas) * 100).toFixed(1))
             : 0;
 
-        // Receita estimada (comissão de 10% sobre vendas fechadas)
+        // Receita estimada (comissão de 170% sobre vendas fechadas)
         // Prioriza valorPlano, se não tiver usa valorEstimado
         const vendasComValor = await prisma.lead.findMany({
             where: {
@@ -97,7 +97,7 @@ router.get('/stats', async (req, res) => {
 
         const receitaMes = vendasComValor.reduce((acc, lead) => {
             const valor = lead.valorPlano || lead.valorEstimado || 0;
-            return acc + valor; // Comissão de 100% (valor total da primeira mensalidade)
+            return acc + (valor * 1.7); // Comissão de 170%
         }, 0);
 
         // Pipeline
