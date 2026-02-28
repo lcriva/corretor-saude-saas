@@ -570,6 +570,11 @@ export class ChatService {
             const ws = getWhatsAppService();
 
             if (ws.isConnected()) {
+                // Registrar sessão ativa para o bot não ignorar a resposta por silêncio
+                if (typeof (ws as any).registrarSessaoAtiva === 'function') {
+                    (ws as any).registrarSessaoAtiva(jid, leadId);
+                }
+
                 await ws.enviarMensagem(jid, mensagem);
                 console.log(`🚀 [Mensagem Automática] Enviada para ${lead.nome} (${jid})`);
                 await this.saveInteraction(leadId, 'assistant', '[Automática] ' + mensagem);

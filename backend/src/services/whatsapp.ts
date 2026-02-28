@@ -194,7 +194,10 @@ class WhatsAppService {
             const hasActiveSession = conversations.has(realJid);
 
             // A) Silêncio absoluto se o lead já foi atendido ou terminou o fluxo, e não há sessão ativa
-            if (isFinishedOrManual && !hasActiveSession) {
+            // EXCEÇÃO: Se o lead estiver na etapa OUTBOUND_OPCOES, permitimos a interação mesmo sendo 100% conclusão
+            const isOutboundInteract = lead && (lead as any).step === 'OUTBOUND_OPCOES';
+
+            if (isFinishedOrManual && !hasActiveSession && !isOutboundInteract) {
                 console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} em modo manual/finalizado. Silêncio absoluto.`);
                 return;
             }
@@ -452,6 +455,20 @@ class WhatsAppService {
             console.error('❌ Erro enviarMensagem:', error);
             throw error;
         }
+    }
+
+    /**
+     * Registra uma sessão como ativa manualmente (usado para mensagens Outbound)
+     * Isso evita que o bot ignore a próxima resposta do cliente por causa das regras de silêncio.
+     */
+    registrarSessaoAtiva(jid: string, leadId: string) {
+        const realJid = jid.endsWith('@s.whatsapp.net') ? jid : `${jid.replace(/\D/g, '')}@s.whatsapp.net`;
+        console.log(`📡 [Outbound] Registrando sessão ativa para ${realJid}`);
+        conversations.set(realJid, {
+            leadId,
+            lastInteraction: Date.now(),
+            reminded: false
+        });
     }
 
     getQRCode() { return this.qrCodeData; }
