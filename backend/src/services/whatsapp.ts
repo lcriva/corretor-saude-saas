@@ -7,7 +7,7 @@ import makeWASocket, {
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import { prisma } from '../lib/prisma';
-import { chatService } from './chatService';
+import { chatService, ChatStep } from './chatService';
 
 interface ConversationState {
     userId?: string;
@@ -195,7 +195,8 @@ class WhatsAppService {
 
             // A) Silêncio absoluto se o lead já foi atendido ou terminou o fluxo, e não há sessão ativa
             // EXCEÇÃO: Se o lead estiver na etapa OUTBOUND_OPCOES, permitimos a interação mesmo sendo 100% conclusão
-            const isOutboundInteract = lead && (lead as any).step === 'OUTBOUND_OPCOES';
+            const session = lead ? await chatService.getOrCreateSession(lead.id) : null;
+            const isOutboundInteract = session?.step === ChatStep.OUTBOUND_OPCOES;
 
             if (isFinishedOrManual && !hasActiveSession && !isOutboundInteract) {
                 console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} em modo manual/finalizado. Silêncio absoluto.`);
