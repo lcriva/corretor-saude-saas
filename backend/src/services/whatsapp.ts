@@ -42,6 +42,16 @@ class WhatsAppService {
         this.startMonitoring();
     }
 
+    private getCanonicalJid(jid: string): string {
+        const raw = jid.replace(/@s\.whatsapp\.net|@c\.us|@lid/g, '').replace(/\D/g, '');
+        let digits = raw.startsWith('55') ? raw.slice(2) : raw;
+        // Se tem 11 dígitos e o terceiro é 9, remove o 9 (BR 9th digit) para lookup interno
+        if (digits.length === 11 && digits[2] === '9') {
+            digits = digits.slice(0, 2) + digits.slice(3);
+        }
+        return `55${digits}@s.whatsapp.net`;
+    }
+
     async conectar(userId?: string) {
         if (this.isConnecting) {
             console.log('⏳ Já está conectando...');
@@ -128,10 +138,11 @@ class WhatsAppService {
         }
 
         // ── 1. BUSCA DE LEAD ATIVO (O MAIS CEDO POSSÍVEL) ────────────────────
-        const activeLeadId = await this.findActiveLeadId(realJid);
+        const canonicalJid = this.getCanonicalJid(realJid);
+        const activeLeadId = await this.findActiveLeadId(realJid); // Mantém a busca flexível no DB
         const lead = activeLeadId ? await prisma.lead.findUnique({ where: { id: activeLeadId } }) : null;
-        if (!lead) console.log(`🔍 [WA] Lead não encontrado para JID: ${realJid}`);
-        else console.log(`🔍 [WA] Lead encontrado: ${lead.nome} (${lead.id})`);
+        if (!lead) console.log(`🔍 [WA] Lead não encontrado para JID: ${realJid} (Canonical: ${canonicalJid})`);
+        else console.log(`🔍 [WA] Lead encontrado: ${lead.nome} (${lead.id}) - JID: ${realJid} (Canonical: ${canonicalJid})`);
 
         // ── 2. PROCESSAMENTO TEXTUAL INICIAL (PARA GATILHOS/RESTART) ──────────
         const messageText = message.message?.conversation ||
@@ -236,20 +247,20 @@ class WhatsAppService {
         console.log(`\n📩 [WA] Mensagem de ${remoteJid}${realJid !== remoteJid ? ` (${realJid})` : ''}: "${messageText}"`);
 
         // ── 4. RECUPERAÇÃO DE SESSÃO / LEAD (IMEDIATA) ─────────────────────
-        let conversation = conversations.get(realJid);
+        let conversation = conversations.get(canonicalJid);
         if (!conversation) {
             if (activeLeadId) {
                 const leadDados = await prisma.lead.findUnique({ where: { id: activeLeadId } });
                 if (leadDados?.lastButtons && Array.isArray(leadDados.lastButtons)) {
-                    lastButtons.set(realJid, leadDados.lastButtons as string[]);
+                    lastButtons.set(canonicalJid, leadDados.lastButtons as string[]);
                 }
                 conversation = { userId, leadId: activeLeadId, lastInteraction: Date.now(), reminded: false };
-                conversations.set(realJid, conversation);
+                conversations.set(canonicalJid, conversation);
             }
         }
 
         // ── 5. TRADUÇÃO DE NÚMERO → LABEL DE BOTÃO ─────────────────────────────
-        const botoesAtivos = lastButtons.get(realJid) ?? [];
+        const botoesAtivos = lastButtons.get(canonicalJid) ?? [];
         const textoLimpo = messageText.trim().replace(/[️⃣.\)\-]/g, '').trim();
         const numeroDigitado = parseInt(textoLimpo, 10);
         let textoFinal = messageText;
@@ -263,7 +274,7 @@ class WhatsAppService {
         const isRestartFinal = msgLimpa === 'recomecar' || msgLimpa === 'restart' || msgLimpa === 'voltar ao inicio';
 
         if (isRestartFinal) {
-            conversations.delete(realJid);
+            conversations.delete(canonicalJid);
             if (conversation?.leadId) chatService.resetSession(conversation.leadId);
             conversation = undefined;
         }
@@ -285,7 +296,7 @@ class WhatsAppService {
             const botoesIniciais = ['Simular Plano Prevent Senior', 'Falar com Especialista'];
 
             if (isAudio) {
-                lastButtons.set(remoteJid, botoesIniciais);
+                lastButtons.set(canonicalJid, botoesIniciais);
                 await this.enviarMensagem(remoteJid, "Olá! 👋 Notei que você enviou um áudio, mas no momento eu ainda não consigo ouvi-los. 😅\n\n" + msgOpcao);
                 return;
             }
@@ -296,7 +307,7 @@ class WhatsAppService {
                 if (activeLeadId) {
                     const isFinishedOrManualRel = lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100);
                     if (!isFinishedOrManualRel) {
-                        lastButtons.set(remoteJid, botoesIniciais);
+                        lastButtons.set(canonicalJid, botoesIniciais);
                         await this.enviarMensagem(remoteJid, "Olá! 👋 Como passou um tempo, perdi nossa conexão.\n\n" + msgOpcao);
                     } else {
                         console.log(`   🔕 Lead conhecido mas silenciado. Ignorando "reconexão".`);
@@ -309,7 +320,7 @@ class WhatsAppService {
             if (!leadId) return;
 
             conversation = { userId, leadId, lastInteraction: Date.now(), reminded: false };
-            conversations.set(realJid, conversation);
+            conversations.set(canonicalJid, conversation);
             await this.processarResposta(remoteJid, realJid, "", conversation);
             return;
         }
@@ -319,11 +330,16 @@ class WhatsAppService {
         conversation.reminded = false;
         await this.processarResposta(remoteJid, realJid, textoFinal, conversation);
 
-        // Se após processar, o lead atingiu 100%, removemos da memória para liberar para o humano
-        const finalLead = await prisma.lead.findUnique({ where: { id: conversation.leadId } });
-        if (finalLead && (finalLead.percentualConclusao >= 100 || ['negociacao', 'fechado', 'perdido'].includes(finalLead.status))) {
-            console.log(`   🔕 Lead ${finalLead.nome} finalizado/qualificado. Ativando Modo Silêncio.`);
-            conversations.delete(realJid);
+        // ── 5. AUTO-SILÊNCIO: Se após processar, o lead atingiu 100%, verificamos se deve fechar a sessão ──
+        if (conversation.leadId) {
+            const finalLead = await prisma.lead.findUnique({ where: { id: conversation.leadId } });
+            const finalSession = await chatService.getOrCreateSession(conversation.leadId);
+            const isOutboundInteractFinal = finalSession?.step === ChatStep.OUTBOUND_OPCOES;
+
+            if (finalLead && !isOutboundInteractFinal && (finalLead.percentualConclusao >= 100 || ['negociacao', 'fechado', 'perdido'].includes(finalLead.status))) {
+                console.log(`   🔕 Lead ${finalLead.nome} finalizado/em modo manual. Removendo sessão: ${canonicalJid}`);
+                conversations.delete(canonicalJid);
+            }
         }
     }
 
@@ -390,14 +406,15 @@ class WhatsAppService {
 
             // Persistência de botões para próxima interação
             const labels = chatResponse.buttons?.map(b => b.label) ?? [];
+            const canonicalJidLocal = this.getCanonicalJid(realJid);
             if (labels.length > 0) {
-                lastButtons.set(realJid, labels);
+                lastButtons.set(canonicalJidLocal, labels);
                 await prisma.lead.update({
                     where: { id: conversation.leadId },
                     data: { lastButtons: labels }
                 }).catch(() => { });
             } else {
-                lastButtons.delete(realJid);
+                lastButtons.delete(canonicalJidLocal);
                 await prisma.lead.update({
                     where: { id: conversation.leadId },
                     data: { lastButtons: [] }
@@ -505,9 +522,9 @@ class WhatsAppService {
      * Isso evita que o bot ignore a próxima resposta do cliente por causa das regras de silêncio.
      */
     registrarSessaoAtiva(jid: string, leadId: string) {
-        const realJid = jid.endsWith('@s.whatsapp.net') ? jid : `${jid.replace(/\D/g, '')}@s.whatsapp.net`;
-        console.log(`📡 [Outbound] Registrando sessão ativa para ${realJid}`);
-        conversations.set(realJid, {
+        const canonicalJid = this.getCanonicalJid(jid);
+        console.log(`📡 [Outbound] Registrando sessão ativa para ${canonicalJid} (Original: ${jid})`);
+        conversations.set(canonicalJid, {
             leadId,
             lastInteraction: Date.now(),
             reminded: false
