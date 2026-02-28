@@ -8,13 +8,16 @@ import { leads } from '@/lib/api';
 import {
     Users, Plus, Search, Phone, Mail, MapPin,
     Calendar, DollarSign, Edit, Trash2, X,
-    Loader2, LogOut, Home, Globe, MessageSquare, UserPlus, Clock
+    Loader2, LogOut, Home, Globe, MessageSquare, UserPlus, Clock,
+    Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../providers';
 
 export default function LeadsPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { isAuthenticated, logout, _hasHydrated } = useAuthStore();
+    const { theme, toggleTheme } = useTheme();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('todos');
@@ -195,50 +198,59 @@ export default function LeadsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <div className="max-w-[1600px] mx-auto px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => router.push('/admin')}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
                         >
                             <Home className="w-5 h-5" />
                             Dashboard
                         </button>
-                        <span className="text-gray-300">|</span>
-                        <h1 className="text-2xl font-bold text-gray-800">Gestão de Leads</h1>
+                        <span className="text-gray-300 dark:text-gray-600">|</span>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Gestão de Leads</h1>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        Sair
-                    </button>
+                    <div className="flex gap-4 items-center">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title={theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}
+                        >
+                            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            Sair
+                        </button>
+                    </div>
                 </div>
             </header>
 
             <div className="max-w-[1600px] mx-auto px-6 py-8">
                 {/* Filtros e Busca */}
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                     <div className="flex flex-col md:flex-row gap-4 justify-between">
                         <div className="flex-1 relative">
-                            <Search className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
+                            <Search className="w-5 h-5 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                             <input
                                 type="text"
                                 placeholder="Buscar por nome, telefone ou email..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             />
                         </div>
 
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         >
                             <option value="todos">Todos os Status</option>
                             <option value="novo">Novo</option>
@@ -263,33 +275,33 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Lista de Leads */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-transparent dark:border-gray-700">
                     {leadsData && leadsData.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+                                <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                                     <tr>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Lead</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Contato</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Localização</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Origem</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Criado em</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Plano / Valor</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Urgência</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Ações</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Lead</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Contato</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Localização</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Origem</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Criado em</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Plano / Valor</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Urgência</th>
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                     {leadsData.map((lead: any) => (
-                                        <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div>
-                                                    <p className="font-semibold text-gray-900">{lead.nome}</p>
-                                                    <p className="text-sm text-gray-500">
+                                                    <p className="font-semibold text-gray-900 dark:text-white">{lead.nome}</p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
                                                         {lead.idade} anos • {lead.dependentes} dep.
                                                         {(lead.idadesDependentes && Array.isArray(lead.idadesDependentes) && lead.idadesDependentes.length > 0) && (
-                                                            <span className="block text-xs text-gray-400">
+                                                            <span className="block text-xs text-gray-400 dark:text-gray-500">
                                                                 Idades: {lead.idadesDependentes.join(', ')}
                                                             </span>
                                                         )}
@@ -298,12 +310,12 @@ export default function LeadsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="space-y-1">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                         <Phone className="w-4 h-4" />
                                                         {lead.telefone}
                                                     </div>
                                                     {lead.email && (
-                                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                             <Mail className="w-4 h-4" />
                                                             {lead.email}
                                                         </div>
@@ -311,24 +323,24 @@ export default function LeadsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                     <MapPin className="w-4 h-4" />
                                                     {lead.cidade}{lead.estado && `, ${lead.estado}`}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 {lead.origem === 'whatsapp' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800">
                                                         <MessageSquare className="w-3 h-3" />
                                                         WhatsApp
                                                     </span>
                                                 ) : ['landing_page', 'web', 'site_chat'].includes(lead.origem) ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
                                                         <Globe className="w-3 h-3" />
                                                         Landing Page
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                                                         <UserPlus className="w-3 h-3" />
                                                         Manual
                                                     </span>
@@ -338,15 +350,15 @@ export default function LeadsPage() {
                                                 <select
                                                     value={lead.status}
                                                     onChange={(e) => updateStatusMutation.mutate({ id: lead.id, status: e.target.value })}
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[lead.status]} cursor-pointer`}
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[lead.status]} cursor-pointer dark:opacity-90`}
                                                 >
                                                     {Object.entries(statusLabels).map(([value, label]) => (
-                                                        <option key={value} value={value}>{label as string}</option>
+                                                        <option key={value} value={value} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">{label as string}</option>
                                                     ))}
                                                 </select>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                                     <Clock className="w-4 h-4" />
                                                     {new Date(lead.criadoEm).toLocaleString('pt-BR', {
                                                         day: '2-digit',
@@ -360,42 +372,42 @@ export default function LeadsPage() {
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     {lead.valorPlano ? (
-                                                        <div className="flex items-center gap-2 text-sm font-semibold text-green-600">
+                                                        <div className="flex items-center gap-2 text-sm font-semibold text-green-600 dark:text-green-400">
                                                             <DollarSign className="w-4 h-4" />
                                                             R$ {lead.valorPlano.toFixed(2)}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-sm text-gray-400">-</span>
+                                                        <span className="text-sm text-gray-400 dark:text-gray-600">-</span>
                                                     )}
                                                     {lead.planoDesejado && (
-                                                        <span className="text-xs text-gray-500 mt-1">{lead.planoDesejado}</span>
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{lead.planoDesejado}</span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 {lead.urgencia ? (
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${lead.urgencia === 'Hoje' ? 'bg-red-100 text-red-800 border-red-200' :
-                                                        lead.urgencia === 'Esta Semana' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                                                            'bg-gray-100 text-gray-800 border-gray-200'
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${lead.urgencia === 'Hoje' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800' :
+                                                        lead.urgencia === 'Esta Semana' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800' :
+                                                            'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                                                         }`}>
                                                         {lead.urgencia}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-gray-400 text-sm">-</span>
+                                                    <span className="text-gray-400 dark:text-gray-600 text-sm">-</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleEdit(lead)}
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                         title="Editar"
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(lead.id, lead.nome)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                                         title="Deletar"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -431,9 +443,9 @@ export default function LeadsPage() {
             {/* Modal Criar/Editar Lead */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-900">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-gray-700">
+                        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                 {editingLead ? 'Editar Lead' : 'Novo Lead'}
                             </h2>
                             <button
@@ -442,7 +454,7 @@ export default function LeadsPage() {
                                     setEditingLead(null);
                                     resetForm();
                                 }}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                             >
                                 <X className="w-6 h-6" />
                             </button>
@@ -451,7 +463,7 @@ export default function LeadsPage() {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Nome Completo *
                                     </label>
                                     <input
@@ -459,13 +471,13 @@ export default function LeadsPage() {
                                         required
                                         value={formData.nome}
                                         onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="João Silva"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Telefone *
                                     </label>
                                     <input
@@ -473,26 +485,26 @@ export default function LeadsPage() {
                                         required
                                         value={formData.telefone}
                                         onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="(11) 98765-4321"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Email
                                     </label>
                                     <input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="joao@email.com"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Idade *
                                     </label>
                                     <input
@@ -500,7 +512,7 @@ export default function LeadsPage() {
                                         required
                                         value={formData.idade}
                                         onChange={(e) => setFormData({ ...formData, idade: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="35"
                                         min="0"
                                         max="120"
@@ -508,7 +520,7 @@ export default function LeadsPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Cidade *
                                     </label>
                                     <input
@@ -516,66 +528,66 @@ export default function LeadsPage() {
                                         required
                                         value={formData.cidade}
                                         onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="São Paulo"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Estado
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.estado}
                                         onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="SP"
                                         maxLength={2}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Dependentes
                                     </label>
                                     <input
                                         type="number"
                                         value={formData.dependentes}
                                         onChange={(e) => setFormData({ ...formData, dependentes: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="0"
                                         min="0"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Idades Dependentes
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.idadesDependentes}
                                         onChange={(e) => setFormData({ ...formData, idadesDependentes: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="Ex: 5, 12, 40 (separe por vírgula)"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Plano Desejado
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.planoDesejado || ''}
                                         onChange={(e) => setFormData({ ...formData, planoDesejado: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="Ex: Enf. 44-58"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Valor Plano (R$)
                                     </label>
                                     <input
@@ -583,7 +595,7 @@ export default function LeadsPage() {
                                         step="0.01"
                                         value={formData.valorPlano}
                                         onChange={(e) => setFormData({ ...formData, valorPlano: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         placeholder="1200.00"
                                         min="0"
                                     />
@@ -591,13 +603,13 @@ export default function LeadsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Urgência
                                 </label>
                                 <select
                                     value={formData.urgencia}
                                     onChange={(e) => setFormData({ ...formData, urgencia: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 >
                                     <option value="">Não informada</option>
                                     <option value="Hoje">Quero Contratar Hoje</option>
@@ -607,13 +619,13 @@ export default function LeadsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Observações
                                 </label>
                                 <textarea
                                     value={formData.observacoes}
                                     onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     placeholder="Anotações sobre o lead..."
                                     rows={3}
                                 />
@@ -627,7 +639,7 @@ export default function LeadsPage() {
                                         setEditingLead(null);
                                         resetForm();
                                     }}
-                                    className="flex-1 px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors"
+                                    className="flex-1 px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold transition-colors"
                                 >
                                     Cancelar
                                 </button>

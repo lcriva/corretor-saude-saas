@@ -6,12 +6,15 @@ import { useAuthStore } from '@/store/authStore';
 import { dashboard } from '@/lib/api';
 import {
     Users, FileText, TrendingUp, DollarSign,
-    AlertCircle, Clock, Bell, Loader2, LogOut, UserPlus, Smartphone
+    AlertCircle, Clock, Bell, Loader2, LogOut, UserPlus, Smartphone,
+    Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../providers';
 
 export default function AdminDashboardPage() {
     const router = useRouter();
     const { isAuthenticated, user, logout, _hasHydrated } = useAuthStore();
+    const { theme, toggleTheme } = useTheme();
 
     const [stats, setStats] = useState<any>(null);
     const [alertas, setAlertas] = useState<any>(null);
@@ -58,18 +61,25 @@ export default function AdminDashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-                        <p className="text-sm text-gray-600">Bem-vindo, {user?.nome}!</p>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Bem-vindo, {user?.nome}!</p>
                     </div>
                     <div className="flex gap-4 items-center">
                         <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title={theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}
+                        >
+                            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                        </button>
+                        <button
                             disabled
-                            className="bg-gray-300 cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-colors"
+                            className="bg-gray-300 dark:bg-gray-600 cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-colors"
                         >
                             <UserPlus className="w-5 h-5" />
                             Cadastrar Cliente (Inativo)
@@ -127,8 +137,8 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Pipeline */}
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Pipeline de Vendas</h2>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8 border border-transparent dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Pipeline de Vendas</h2>
                     <div className="grid grid-cols-4 gap-4">
                         {stats?.pipeline && Object.entries(stats.pipeline).map(([status, count]: [string, any]) => {
                             const statusColors: any = {
@@ -153,7 +163,7 @@ export default function AdminDashboardPage() {
                                     <div className={`${statusColors[status]} h-24 rounded-lg flex items-center justify-center mb-2`}>
                                         <span className="text-4xl font-bold text-white">{count}</span>
                                     </div>
-                                    <p className="text-sm text-gray-600 font-medium">{statusLabels[status]}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{statusLabels[status]}</p>
                                 </div>
                             );
                         })}
@@ -163,22 +173,22 @@ export default function AdminDashboardPage() {
                 {/* Pipeline de Leads (Kanban Simplificado) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* LEADS FRIOS (< 100%) */}
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-blue-400">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border-t-4 border-blue-400 dark:border-t-blue-500">
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-blue-500" />
                             Leads Frios
-                            <span className="text-xs font-normal text-gray-500 ml-auto">Em preenchimento</span>
+                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">Em preenchimento</span>
                         </h2>
                         <div className="space-y-3">
                             {alertas?.leadsFrios?.map((lead: any) => (
-                                <div key={lead.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <div key={lead.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-100 dark:border-gray-600">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-semibold text-gray-700 text-sm truncate">{lead.nome || 'Visitante'}</h3>
-                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{lead.percentualConclusao}%</span>
+                                        <h3 className="font-semibold text-gray-700 dark:text-white text-sm truncate">{lead.nome || 'Visitante'}</h3>
+                                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full">{lead.percentualConclusao}%</span>
                                     </div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <p className="text-xs text-gray-500">{lead.telefone}</p>
-                                        <p className="text-[10px] text-gray-400">{new Date(lead.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{lead.telefone}</p>
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(lead.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
 
                                     {/* Destaque de informações faltando */}
@@ -193,34 +203,34 @@ export default function AdminDashboardPage() {
                                         </div>
                                     )}
 
-                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                                         <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${lead.percentualConclusao}%` }}></div>
                                     </div>
                                 </div>
                             ))}
                             {(!alertas?.leadsFrios || alertas.leadsFrios.length === 0) && (
-                                <p className="text-sm text-gray-400 text-center py-4">Nenhum lead frio.</p>
+                                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Nenhum lead frio.</p>
                             )}
                         </div>
                     </div>
 
                     {/* LEADS QUENTES (Negociação ou 100%) */}
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-red-500">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border-t-4 border-red-500 dark:border-t-red-600">
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-red-500" />
                             Leads Quentes
-                            <span className="text-xs font-normal text-gray-500 ml-auto">Prioridade por Urgência</span>
+                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">Prioridade por Urgência</span>
                         </h2>
                         <div className="space-y-3">
                             {alertas?.leadsQuentes?.map((lead: any) => (
-                                <div key={lead.id} className="bg-red-50 p-3 rounded-lg border border-red-100">
+                                <div key={lead.id} className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-900/30">
                                     <div className="flex justify-between items-start mb-1">
-                                        <h3 className="font-semibold text-gray-800 text-sm truncate">{lead.nome}</h3>
+                                        <h3 className="font-semibold text-gray-800 dark:text-white text-sm truncate">{lead.nome}</h3>
                                         <div className="flex items-center gap-1">
                                             {lead.urgencia && (
                                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${lead.urgencia === 'Hoje' ? 'bg-red-600 text-white' :
                                                     lead.urgencia === 'Esta Semana' ? 'bg-orange-500 text-white' :
-                                                        'bg-gray-400 text-white'
+                                                        'bg-gray-400 dark:bg-gray-600 text-white'
                                                     }`}>
                                                     {lead.urgencia}
                                                 </span>
@@ -229,11 +239,11 @@ export default function AdminDashboardPage() {
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center mb-1">
-                                        <p className="text-xs text-gray-600">{lead.telefone}</p>
-                                        <p className="text-[10px] text-gray-400">{new Date(lead.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400">{lead.telefone}</p>
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(lead.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
                                     {lead.valorPlano && (
-                                        <p className="text-xs font-bold text-red-700 mb-2">R$ {lead.valorPlano.toLocaleString()}</p>
+                                        <p className="text-xs font-bold text-red-700 dark:text-red-400 mb-2">R$ {lead.valorPlano.toLocaleString()}</p>
                                     )}
                                     <button
                                         onClick={() => router.push(`/leads`)}
@@ -257,13 +267,13 @@ export default function AdminDashboardPage() {
 
                 <div className="space-y-3">
                     {alertas?.leadsSemInteracao && alertas.leadsSemInteracao.length > 0 && (
-                        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-start gap-3 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-lg">
                             <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <p className="font-semibold text-orange-800">
+                                <p className="font-semibold text-orange-800 dark:text-orange-200">
                                     {alertas.leadsSemInteracao.length} lead(s) sem interação há mais de 3 dias
                                 </p>
-                                <p className="text-sm text-orange-700 mt-1">
+                                <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
                                     {alertas.leadsSemInteracao[0]?.nome} e outros. Recomendamos contato urgente!
                                 </p>
                             </div>
@@ -271,13 +281,13 @@ export default function AdminDashboardPage() {
                     )}
 
                     {alertas?.propostasSemResposta && alertas.propostasSemResposta.length > 0 && (
-                        <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 rounded-lg">
                             <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <p className="font-semibold text-blue-800">
+                                <p className="font-semibold text-blue-800 dark:text-blue-200">
                                     {alertas.propostasSemResposta.length} proposta(s) aguardando resposta
                                 </p>
-                                <p className="text-sm text-blue-700 mt-1">
+                                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                                     Enviar follow-up para aumentar conversão
                                 </p>
                             </div>
@@ -285,13 +295,13 @@ export default function AdminDashboardPage() {
                     )}
 
                     {alertas?.negociacoesParadas && alertas.negociacoesParadas.length > 0 && (
-                        <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/30 rounded-lg">
                             <TrendingUp className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <p className="font-semibold text-yellow-800">
+                                <p className="font-semibold text-yellow-800 dark:text-yellow-200">
                                     {alertas.negociacoesParadas.length} negociação(ões) parada(s)
                                 </p>
-                                <p className="text-sm text-yellow-700 mt-1">
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
                                     {alertas.negociacoesParadas[0]?.nome} - em negociação há mais de 5 dias
                                 </p>
                             </div>

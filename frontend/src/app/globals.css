@@ -4,19 +4,20 @@
 
 :root {
     --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
+    --background-start-rgb: 255, 255, 255;
     --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --foreground-rgb: 255, 255, 255;
-        --background-start-rgb: 0, 0, 0;
-        --background-end-rgb: 0, 0, 0;
-    }
+.dark {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 17, 24, 39; /* gray-900 */
+    --background-end-rgb: 17, 24, 39;
 }
 
 body {
     color: rgb(var(--foreground-rgb));
     background: rgb(var(--background-start-rgb));
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
 }
