@@ -447,6 +447,12 @@ export class ChatService {
         const score = this.calcularLeadScore(session);
         await this.updateLead(session.leadId, { leadScore: score, status: 'novo', percentualConclusao: 100 });
         session.step = ChatStep.FINISHED;
+
+        // Disparar mensagem automática se for da Landing Page
+        this.dispararMensagemBoasVindasWhatsApp(session.leadId).catch((err: any) => {
+            console.error('❌ Erro ao disparar mensagem automática:', err);
+        });
+
         return {
             text:
                 'Obrigado por fornecer seus dados. 🎉\n\n' +
@@ -486,6 +492,46 @@ export class ChatService {
         await this.updateLead(session.leadId, { status: 'novo', percentualConclusao: 20 });
         session.step = ChatStep.ESPECIALISTA;
         return { text: 'Vou encaminhar você agora para um especialista. Aguarde um momento... ✅\n\nEm breve nossa equipe entrará em contato! 💙' };
+    }
+
+    private async dispararMensagemBoasVindasWhatsApp(leadId: string) {
+        try {
+            const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+            if (!lead || lead.origem !== 'landing_page') return;
+
+            // Formatar número para o padrão WhatsApp (55 + DDD + Numero)
+            let numeroDestino = lead.telefone.replace(/\D/g, '');
+            if (!numeroDestino.startsWith('55')) numeroDestino = '55' + numeroDestino;
+            const jid = `${numeroDestino}@s.whatsapp.net`;
+
+            // Dados do plano para a mensagem
+            const valorFormatado = lead.valorPlano ? lead.valorPlano.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sob consulta';
+            const depInfo = lead.dependentes > 0 ? ` + ${lead.dependentes} dependentes` : '';
+
+            const mensagem =
+                `Olá, ${lead.nome}! 👋\n\n` +
+                `Obrigado por fornecer suas informações em nossa Landing Page da Prevent Sênior. 😊\n\n` +
+                `Me apresento, sou o *Thiago da Área de Vendas da Prevent Senior* e vou seguir com o seu atendimento por aqui.\n\n` +
+                `*Resumo do seu interesse:*\n` +
+                `📋 Plano: ${lead.planoDesejado || 'Simulação realizada'}\n` +
+                `💰 Valor: ${valorFormatado}${depInfo}\n` +
+                `🏙️ Cidade: ${lead.cidade || 'Não informada'}\n\n` +
+                `Você tem alguma dúvida sobre o plano da Prevent Sênior, ou vamos seguir para a contratação?`;
+
+            // Usar import dinâmico para evitar dependência circular
+            const { getWhatsAppService } = await import('./whatsapp');
+            const ws = getWhatsAppService();
+
+            if (ws.isConnected()) {
+                await ws.enviarMensagem(jid, mensagem);
+                console.log(`🚀 [Mensagem Automática] Enviada para ${lead.nome} (${jid})`);
+                await this.saveInteraction(leadId, 'assistant', '[Automática] ' + mensagem);
+            } else {
+                console.log(`⚠️ [Mensagem Automática] Não enviada - WhatsApp desconectado.`);
+            }
+        } catch (error) {
+            console.error('❌ Erro em dispararMensagemBoasVindasWhatsApp:', error);
+        }
     }
 
     private calcularLeadScore(session: ChatSession): number {
