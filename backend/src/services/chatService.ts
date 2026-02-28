@@ -570,16 +570,17 @@ export class ChatService {
             const ws = getWhatsAppService();
 
             if (ws.isConnected()) {
+                console.log(`📡 [Outbound] Enviando para ${lead.nome} (${jid})`);
                 // Registrar sessão ativa para o bot não ignorar a resposta por silêncio
                 if (typeof (ws as any).registrarSessaoAtiva === 'function') {
                     (ws as any).registrarSessaoAtiva(jid, leadId);
                 }
 
                 await ws.enviarMensagem(jid, mensagem);
-                console.log(`🚀 [Mensagem Automática] Enviada para ${lead.nome} (${jid})`);
+                console.log(`🚀 [Mensagem Automática] Enviada com sucesso.`);
                 await this.saveInteraction(leadId, 'assistant', '[Automática] ' + mensagem);
             } else {
-                console.log(`⚠️ [Mensagem Automática] Não enviada - WhatsApp desconectado.`);
+                console.log(`⚠️ [Mensagem Automática] Falha: WhatsApp desconectado ou falha no socket.`);
             }
         } catch (error) {
             console.error('❌ Erro em dispararMensagemBoasVindasWhatsApp:', error);

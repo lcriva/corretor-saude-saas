@@ -130,6 +130,8 @@ class WhatsAppService {
         // ── 1. BUSCA DE LEAD ATIVO (O MAIS CEDO POSSÍVEL) ────────────────────
         const activeLeadId = await this.findActiveLeadId(realJid);
         const lead = activeLeadId ? await prisma.lead.findUnique({ where: { id: activeLeadId } }) : null;
+        if (!lead) console.log(`🔍 [WA] Lead não encontrado para JID: ${realJid}`);
+        else console.log(`🔍 [WA] Lead encontrado: ${lead.nome} (${lead.id})`);
 
         // ── 2. PROCESSAMENTO TEXTUAL INICIAL (PARA GATILHOS/RESTART) ──────────
         const messageText = message.message?.conversation ||
@@ -193,13 +195,23 @@ class WhatsAppService {
             const isFinishedOrManual = lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100);
             const hasActiveSession = conversations.has(realJid);
 
-            // A) Silêncio absoluto se o lead já foi atendido ou terminou o fluxo, e não há sessão ativa
-            // EXCEÇÃO: Se o lead estiver na etapa OUTBOUND_OPCOES, permitimos a interação mesmo sendo 100% conclusão
+            // CURA DE SESSÃO: Se o servidor reiniciou, o state em memória sumiu.
+            // Se o lead tem os botões de outbound no banco, restauramos a sessão para não ficar em silêncio.
             const session = lead ? await chatService.getOrCreateSession(lead.id) : null;
+            if (session && session.step !== ChatStep.OUTBOUND_OPCOES && lead?.lastButtons) {
+                const buttons = lead.lastButtons as string[];
+                if (buttons.includes('Tirar Dúvidas') && buttons.includes('Continuar a Contratação')) {
+                    console.log(`🩹 [Healing] Restaurando step OUTBOUND_OPCOES e botões para lead ${lead.nome || lead.id}`);
+                    session.step = ChatStep.OUTBOUND_OPCOES;
+                    this.registrarSessaoAtiva(realJid, lead.id);
+                    lastButtons.set(realJid, buttons);
+                }
+            }
+
             const isOutboundInteract = session?.step === ChatStep.OUTBOUND_OPCOES;
 
             if (isFinishedOrManual && !hasActiveSession && !isOutboundInteract) {
-                console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} em modo manual/finalizado. Silêncio absoluto.`);
+                console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} silenciado. (Status: ${lead?.status}, %: ${lead?.percentualConclusao}, Session: ${hasActiveSession}, Step: ${session?.step})`);
                 return;
             }
 
