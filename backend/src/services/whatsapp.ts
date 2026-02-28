@@ -206,16 +206,18 @@ class WhatsAppService {
             const isFinishedOrManual = lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100);
             const hasActiveSession = conversations.has(canonicalJid);
 
-            // CURA DE SESSÃO: Se o servidor reiniciou, o state em memória sumiu.
-            // Se o lead tem os botões de outbound no banco, restauramos a sessão para não ficar em silêncio.
+            // CURA DE SESSÃO: Se o servidor reiniciou ou se a sessão em memória sumiu,
+            // garantimos que o estado do bot condiz com o database para leads de Outbound.
             const session = lead ? await chatService.getOrCreateSession(lead.id) : null;
-            if (session && session.step !== ChatStep.OUTBOUND_OPCOES && lead?.lastButtons) {
+            const isOutboundInteract = session?.step === ChatStep.OUTBOUND_OPCOES;
+
+            if (lead?.lastButtons && (!hasActiveSession || !lastButtons.has(canonicalJid))) {
                 const buttons = lead.lastButtons as string[];
                 if (buttons.includes('Tirar Dúvidas') && buttons.includes('Continuar a Contratação')) {
-                    console.log(`🩹 [Healing] Restaurando step OUTBOUND_OPCOES e botões para lead ${lead.nome || lead.id}`);
-                    session.step = ChatStep.OUTBOUND_OPCOES;
-                    this.registrarSessaoAtiva(realJid, lead.id);
-                    lastButtons.set(canonicalJid, buttons);
+                    console.log(`🩹 [Healing] Sincronizando memória para lead de Outbound: ${lead.nome || lead.id}`);
+                    if (!hasActiveSession) this.registrarSessaoAtiva(realJid, lead.id, buttons);
+                    if (!lastButtons.has(canonicalJid)) lastButtons.set(canonicalJid, buttons);
+                    if (session && session.step !== ChatStep.OUTBOUND_OPCOES) session.step = ChatStep.OUTBOUND_OPCOES;
                 }
             }
 
@@ -523,7 +525,7 @@ class WhatsAppService {
      * Registra uma sessão como ativa manualmente (usado para mensagens Outbound)
      * Isso evita que o bot ignore a próxima resposta do cliente por causa das regras de silêncio.
      */
-    registrarSessaoAtiva(jid: string, leadId: string) {
+    registrarSessaoAtiva(jid: string, leadId: string, buttons?: string[]) {
         const canonicalJid = this.getCanonicalJid(jid);
         console.log(`📡 [Outbound] Registrando sessão ativa para ${canonicalJid} (Original: ${jid})`);
         conversations.set(canonicalJid, {
@@ -531,6 +533,10 @@ class WhatsAppService {
             lastInteraction: Date.now(),
             reminded: false
         });
+        if (buttons) {
+            console.log(`   🔘 Botões registrados em memória: ${buttons.join(', ')}`);
+            lastButtons.set(canonicalJid, buttons);
+        }
     }
 
     getQRCode() { return this.qrCodeData; }

@@ -573,7 +573,7 @@ export class ChatService {
                 console.log(`📡 [Outbound] Enviando para ${lead.nome} (${jid})`);
                 // Registrar sessão ativa para o bot não ignorar a resposta por silêncio
                 if (typeof (ws as any).registrarSessaoAtiva === 'function') {
-                    (ws as any).registrarSessaoAtiva(jid, leadId);
+                    (ws as any).registrarSessaoAtiva(jid, leadId, opcoes);
                 }
 
                 await ws.enviarMensagem(jid, mensagem);
