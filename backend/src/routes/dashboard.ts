@@ -229,13 +229,7 @@ router.get('/alertas', async (req, res) => {
             orderBy: { atualizadoEm: 'desc' }
         });
 
-        // Ordenação por urgência: "Hoje" > "Esta Semana" > "Sem Urgência" > null
-        const leadsQuentes = combinedQuentes.sort((a, b) => {
-            const priority: any = { 'Hoje': 1, 'Esta Semana': 2, 'Sem Urgência': 3 };
-            const pA = priority[a.urgencia || ''] || 99;
-            const pB = priority[b.urgencia || ''] || 99;
-            return pA - pB;
-        });
+        const leadsQuentes = combinedQuentes;
 
         res.json({
             leadsFrios,

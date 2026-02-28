@@ -36,7 +36,6 @@ export default function LeadsPage() {
         observacoes: '',
         planoDesejado: '',
         valorPlano: '',
-        urgencia: '',
         idadesDependentes: '' // String separada por vírgula para edição
     });
 
@@ -119,7 +118,6 @@ export default function LeadsPage() {
             observacoes: '',
             planoDesejado: '',
             valorPlano: '',
-            urgencia: '',
             idadesDependentes: ''
         });
     };
@@ -156,7 +154,6 @@ export default function LeadsPage() {
             observacoes: lead.observacoes || '',
             planoDesejado: lead.planoDesejado || '',
             valorPlano: lead.valorPlano?.toString() || '',
-            urgencia: lead.urgencia || '',
             idadesDependentes: (lead.idadesDependentes && Array.isArray(lead.idadesDependentes)) ? lead.idadesDependentes.join(', ') : ''
         });
         setShowModal(true);
@@ -288,7 +285,6 @@ export default function LeadsPage() {
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Criado em</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Plano / Valor</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Urgência</th>
                                         <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Ações</th>
                                     </tr>
                                 </thead>
@@ -383,18 +379,6 @@ export default function LeadsPage() {
                                                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{lead.planoDesejado}</span>
                                                     )}
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {lead.urgencia ? (
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${lead.urgencia === 'Hoje' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800' :
-                                                        lead.urgencia === 'Esta Semana' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800' :
-                                                            'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-                                                        }`}>
-                                                        {lead.urgencia}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-gray-400 dark:text-gray-600 text-sm">-</span>
-                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
@@ -602,21 +586,6 @@ export default function LeadsPage() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Urgência
-                                </label>
-                                <select
-                                    value={formData.urgencia}
-                                    onChange={(e) => setFormData({ ...formData, urgencia: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                >
-                                    <option value="">Não informada</option>
-                                    <option value="Hoje">Quero Contratar Hoje</option>
-                                    <option value="Esta Semana">Quero Contratar essa Semana</option>
-                                    <option value="Sem Urgência">Não tenho Urgência</option>
-                                </select>
-                            </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

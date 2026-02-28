@@ -219,7 +219,7 @@ export default function AdminDashboardPage() {
                         <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-red-500" />
                             Leads Quentes
-                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">Prioridade por Urgência</span>
+                            Leads Quentes
                         </h2>
                         <div className="space-y-3">
                             {alertas?.leadsQuentes?.map((lead: any) => (
@@ -227,14 +227,6 @@ export default function AdminDashboardPage() {
                                     <div className="flex justify-between items-start mb-1">
                                         <h3 className="font-semibold text-gray-800 dark:text-white text-sm truncate">{lead.nome}</h3>
                                         <div className="flex items-center gap-1">
-                                            {lead.urgencia && (
-                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${lead.urgencia === 'Hoje' ? 'bg-red-600 text-white' :
-                                                    lead.urgencia === 'Esta Semana' ? 'bg-orange-500 text-white' :
-                                                        'bg-gray-400 dark:bg-gray-600 text-white'
-                                                    }`}>
-                                                    {lead.urgencia}
-                                                </span>
-                                            )}
                                             <AlertCircle className="w-4 h-4 text-red-500" />
                                         </div>
                                     </div>

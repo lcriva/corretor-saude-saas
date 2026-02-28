@@ -29,7 +29,6 @@ export enum ChatStep {
     CAPTURA_NOME = 'CAPTURA_NOME',
     CAPTURA_TELEFONE = 'CAPTURA_TELEFONE',
     CONFIRMACAO = 'CONFIRMACAO',
-    URGENCIA = 'URGENCIA', // Novo step para capturar urgência
     ESPECIALISTA = 'ESPECIALISTA',
     FINISHED = 'FINISHED',
 }
@@ -50,7 +49,6 @@ export interface ChatSession {
         cidade?: string;
         planoDesejado?: string;
         valorPlano?: number;
-        urgencia?: string;
     };
     pendingAction?: 'encaminhar' | 'confirmar';
 }
@@ -405,34 +403,6 @@ export class ChatService {
             }
 
             // ─── CONFIRMAÇÃO ──────────────────────────────────────────────────
-            case ChatStep.CONFIRMACAO: {
-                if (text.includes('aguardar') || text.includes('contato') || text.includes('fechar')) {
-                    // Se escolher aguardar, ainda perguntamos a urgência para priorizar
-                    return this.gerarConfirmacao(session);
-                }
-                if (text.includes('hoje') || text.includes('semana') || text.includes('urgencia')) {
-                    return this.handleUrgency(session, text);
-                }
-                if (text.includes('rede') || text.includes('credenciada')) {
-                    return {
-                        text: '🏥 *Rede Credenciada Prevent Senior*\n\nAcesse a rede completa em:\nhttps://preventseniormelhoridade.com.br/#rede\n\n👨‍⚕️ Quer falar com um especialista para finalizar a contratação?',
-                        buttons: [btn('Aguardar Contato para Fechar o Plano'), btn('Falar com especialista')],
-                    };
-                }
-                return {
-                    text: 'Como posso te ajudar? 😊',
-                    buttons: [
-                        btn('Aguardar Contato para Fechar o Plano'),
-                        btn('Ver rede credenciada', 'https://preventseniormelhoridade.com.br/#rede'),
-                        btn('Falar com especialista'),
-                    ],
-                };
-            }
-
-            // ─── URGÊNCIA ─────────────────────────────────────────────────────
-            case ChatStep.URGENCIA: {
-                return this.handleUrgency(session, text);
-            }
 
             // ─── ESPECIALISTA ─────────────────────────────────────────────────
             case ChatStep.ESPECIALISTA:
@@ -475,8 +445,8 @@ export class ChatService {
 
     private async gerarConfirmacao(session: ChatSession): Promise<ChatResponse> {
         const score = this.calcularLeadScore(session);
-        await this.updateLead(session.leadId, { leadScore: score, status: 'novo', percentualConclusao: 95 });
-        session.step = ChatStep.URGENCIA;
+        await this.updateLead(session.leadId, { leadScore: score, status: 'novo', percentualConclusao: 100 });
+        session.step = ChatStep.FINISHED;
         return {
             text:
                 'Obrigado por fornecer seus dados. 🎉\n\n' +
@@ -485,27 +455,7 @@ export class ChatService {
                 '✔ Apresentar a rede credenciada\n' +
                 '✔ Explicar as carências\n' +
                 '✔ Finalizar a contratação\n\n' +
-                'Para priorizar o seu atendimento, por favor, nos diga qual a sua urgência para contratar o Plano da Prevent Sênior.',
-            buttons: [
-                btn('Quero Contratar Hoje'),
-                btn('Quero Contratar essa Semana'),
-                btn('Não tenho Urgência'),
-            ],
-        };
-    }
-
-    private async handleUrgency(session: ChatSession, text: string): Promise<ChatResponse> {
-        let urgencia = 'Não informada';
-        if (text.includes('hoje')) urgencia = 'Hoje';
-        else if (text.includes('semana')) urgencia = 'Esta Semana';
-        else if (text.includes('não') || text.includes('urgência') || text.includes('urgencia')) urgencia = 'Sem Urgência';
-
-        session.collectedData.urgencia = urgencia;
-        await this.updateLead(session.leadId, { urgencia, status: 'negociacao', percentualConclusao: 100 });
-        session.step = ChatStep.FINISHED;
-
-        return {
-            text: 'Muito obrigado! 🎉 Já recebemos sua preferência de urgência. Um consultor entrará em contato prioritariamente conforme sua escolha. 💙\n\nCaso precise de mais alguma coisa, é só chamar!'
+                'Caso precise de mais alguma coisa, é só chamar!',
         };
     }
 
