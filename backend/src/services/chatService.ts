@@ -30,6 +30,7 @@ export enum ChatStep {
     CAPTURA_TELEFONE = 'CAPTURA_TELEFONE',
     CONFIRMACAO = 'CONFIRMACAO',
     ESPECIALISTA = 'ESPECIALISTA',
+    OUTBOUND_OPCOES = 'OUTBOUND_OPCOES',
     FINISHED = 'FINISHED',
 }
 
@@ -406,9 +407,44 @@ export class ChatService {
 
             // ─── ESPECIALISTA ─────────────────────────────────────────────────
             case ChatStep.ESPECIALISTA:
-            case ChatStep.FINISHED: {
                 return { text: 'Seu atendimento já foi encaminhado. Se precisar de mais alguma coisa, é só chamar! 😊' };
+
+            // ─── OUTBOUND OPÇÕES (Thiago Interativo) ──────────────────────────
+            case ChatStep.OUTBOUND_OPCOES: {
+                if (text === 'tirar dúvidas' || text === 'tirar duvidas' || text === '1') {
+                    // MUDAR PARA MANUAL
+                    await this.updateLead(session.leadId, { status: 'negociacao' });
+                    session.step = ChatStep.FINISHED;
+                    return { text: 'Um momento, por favor.' };
+                }
+
+                if (text === 'continuar a contratação' || text === 'continuar a contratacao' || text === '2') {
+                    session.step = ChatStep.FINISHED;
+                    return {
+                        text:
+                            'Perfeito! Vamos seguir com a sua contratação. 🚀\n\n' +
+                            '*Primeiro Passo:* Envio da documentação (Titular e Dependentes):\n' +
+                            '📄 RG ou CNH\n' +
+                            '📄 CPF\n' +
+                            '📄 Cartão do SUS\n' +
+                            '🏠 Comprovante de Residência\n' +
+                            '📧 E-mail\n' +
+                            '💍 Estado Civil\n\n' +
+                            '--- *Próximas etapas:* ---\n' +
+                            '1️⃣ Após o cadastro, você receberá uma notificação no e-mail.\n' +
+                            '2️⃣ A área médica da Prevent Sênior entrará em contato para o questionário de saúde.\n' +
+                            '3️⃣ Você receberá o contrato por e-mail para leitura e aceite.\n' +
+                            '4️⃣ Após o aceite, você receberá o boleto da 1ª mensalidade por e-mail.\n' +
+                            '5️⃣ Com o boleto pago, o próximo passo é instalar o app da Prevent Sênior e criar sua senha.\n\n' +
+                            'Pode enviar fotos dos documentos por aqui mesmo!'
+                    };
+                }
+
+                return this.getFallbackResponse('Por favor, escolha uma das opções:\n1️⃣ Tirar Dúvidas\n2️⃣ Continuar a Contratação');
             }
+
+            case ChatStep.FINISHED:
+                return { text: 'Seu atendimento já foi encaminhado. Se precisar de mais alguma coisa, é só chamar! 😊' };
 
             default:
                 return { text: 'Desculpe, me perdi. Pode repetir?' };
@@ -516,7 +552,18 @@ export class ChatService {
                 `📋 Plano: ${lead.planoDesejado || 'Simulação realizada'}\n` +
                 `💰 Valor: ${valorFormatado}${depInfo}\n` +
                 `🏙️ Cidade: ${lead.cidade || 'Não informada'}\n\n` +
-                `Você tem alguma dúvida sobre o plano da Prevent Sênior, ou vamos seguir para a contratação?`;
+                `Como deseja prosseguir?\n\n` +
+                `1️⃣ Tirar Dúvidas\n` +
+                `2️⃣ Continuar a Contratação\n\n` +
+                `_👆 Responda com o número da opção_`;
+
+            // Atualizar sessão para aguardar resposta das opções
+            const session = await this.getOrCreateSession(leadId);
+            session.step = ChatStep.OUTBOUND_OPCOES;
+
+            // Atualizar lastButtons no lead para que o WhatsAppService entenda o "1" e "2"
+            const opcoes = ['Tirar Dúvidas', 'Continuar a Contratação'];
+            await this.updateLead(leadId, { lastButtons: opcoes });
 
             // Usar import dinâmico para evitar dependência circular
             const { getWhatsAppService } = await import('./whatsapp');
