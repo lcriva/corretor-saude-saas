@@ -41,10 +41,10 @@ export function Header() {
 
                     <button
                         onClick={sendMessage}
-                        className="bg-[#007aff] hover:bg-[#0062cc] text-white px-7 py-3 rounded-full font-bold transition-all shadow-[0_4px_14px_rgba(0,122,255,0.3)] hover:shadow-[0_6px_20px_rgba(0,122,255,0.4)] flex items-center gap-2"
+                        className="bg-[#25D366] hover:bg-[#20ba5c] text-white px-7 py-3 rounded-full font-bold transition-all shadow-[0_4px_14px_rgba(37,211,102,0.3)] hover:shadow-[0_6px_20px_rgba(37,211,102,0.4)] flex items-center gap-2"
                     >
                         <Phone className="w-4 h-4" />
-                        {phoneNumber}
+                        Falar no WhatsApp
                     </button>
                 </nav>
 
@@ -66,10 +66,10 @@ export function Header() {
                     <a href="#diferenciais" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Diferenciais</a>
                     <button
                         onClick={sendMessage}
-                        className="w-full bg-[#007aff] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"
+                        className="w-full bg-[#25D366] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"
                     >
                         <Phone className="w-4 h-4" />
-                        {phoneNumber}
+                        Falar no WhatsApp
                     </button>
                 </div>
             )}
