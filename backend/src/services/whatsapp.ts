@@ -185,14 +185,14 @@ class WhatsAppService {
                 console.log(`   🛠️ Intervenção humana MANUAL detectada para ${lead.nome}. Bot silenciado.`);
                 await prisma.lead.update({ where: { id: lead.id }, data: { status: 'negociacao' } });
             }
-            conversations.delete(realJid);
+            conversations.delete(canonicalJid);
             return;
         }
 
         // 3.2. Se for Gatilho ou Restart (bypass total de silêncio para permitir recomeçar)
         if (ehGatilho || isRestart) {
             console.log(`   🚀 Gatilho ou Restart detectado. Bypassing silêncio e resetando lead.`);
-            conversations.delete(realJid);
+            conversations.delete(canonicalJid);
             if (activeLeadId) {
                 await prisma.lead.update({
                     where: { id: activeLeadId },
@@ -204,7 +204,7 @@ class WhatsAppService {
         } else {
             // 3.3. REGRAS DE SILÊNCIO (CONVERSA MANUAL OU FINALIZADA)
             const isFinishedOrManual = lead && (lead.status !== 'novo' || lead.percentualConclusao >= 100);
-            const hasActiveSession = conversations.has(realJid);
+            const hasActiveSession = conversations.has(canonicalJid);
 
             // CURA DE SESSÃO: Se o servidor reiniciou, o state em memória sumiu.
             // Se o lead tem os botões de outbound no banco, restauramos a sessão para não ficar em silêncio.
@@ -215,14 +215,16 @@ class WhatsAppService {
                     console.log(`🩹 [Healing] Restaurando step OUTBOUND_OPCOES e botões para lead ${lead.nome || lead.id}`);
                     session.step = ChatStep.OUTBOUND_OPCOES;
                     this.registrarSessaoAtiva(realJid, lead.id);
-                    lastButtons.set(realJid, buttons);
+                    lastButtons.set(canonicalJid, buttons);
                 }
             }
 
             const isOutboundInteract = session?.step === ChatStep.OUTBOUND_OPCOES;
 
+            console.log(`   🔎 [SilenceCheck] Lead: ${lead?.nome || '?'}, Finished/Manual: ${isFinishedOrManual}, HasSession: ${hasActiveSession}, OutboundStep: ${isOutboundInteract}`);
+
             if (isFinishedOrManual && !hasActiveSession && !isOutboundInteract) {
-                console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} silenciado. (Status: ${lead?.status}, %: ${lead?.percentualConclusao}, Session: ${hasActiveSession}, Step: ${session?.step})`);
+                console.log(`   🔕 Lead ${lead ? lead.nome : 'desconhecido'} silenciado. Motivo: Regra 100%/Manual.`);
                 return;
             }
 
