@@ -221,7 +221,7 @@ class WhatsAppService {
                 }
             }
 
-            const isOutboundInteract = session?.step === ChatStep.OUTBOUND_OPCOES;
+
 
             console.log(`   🔎 [SilenceCheck] Lead: ${lead?.nome || '?'}, Finished/Manual: ${isFinishedOrManual}, HasSession: ${hasActiveSession}, OutboundStep: ${isOutboundInteract}`);
 
