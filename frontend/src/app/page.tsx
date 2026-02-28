@@ -271,7 +271,7 @@ export default function PreventLandingPage() {
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-[#007aff]/10 skew-x-12 transform translate-x-20" />
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">Rede Credenciada</span>
+                        <span className="text-[#007aff] font-bold uppercase tracking-wide text-sm">REDE CREDENCIADA</span>
                         <h2 className="text-3xl md:text-5xl font-bold mt-2 mb-6 leading-tight">
                             Hospitais Sancta Maggiore — <br className="hidden md:block" />Rede Própria Prevent Senior
                         </h2>

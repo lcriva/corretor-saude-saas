@@ -36,7 +36,7 @@ export function Header() {
                 <nav className="hidden md:flex items-center gap-8 font-semibold text-sm text-[#4a4a4a] uppercase tracking-wide">
                     <a href="#prevent" className="hover:text-[#007aff] transition-colors duration-300">Sobre</a>
                     <a href="#planos" className="hover:text-[#007aff] transition-colors duration-300">Planos</a>
-                    <button onClick={sendRedeMessage} className="hover:text-[#007aff] transition-colors duration-300">Rede Credenciada</button>
+                    <button onClick={sendRedeMessage} className="hover:text-[#007aff] transition-colors duration-300">REDE CREDENCIADA</button>
                     <a href="#diferenciais" className="hover:text-[#007aff] transition-colors duration-300">Diferenciais</a>
 
                     <button
@@ -62,7 +62,7 @@ export function Header() {
                 <div className="md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg p-4 flex flex-col gap-4">
                     <a href="#prevent" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Sobre</a>
                     <a href="#planos" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Planos</a>
-                    <button onClick={sendRedeMessage} className="block w-full text-left py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Rede Credenciada</button>
+                    <button onClick={sendRedeMessage} className="block w-full text-left py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">REDE CREDENCIADA</button>
                     <a href="#diferenciais" className="block py-2 text-[#4a4a4a] font-semibold hover:text-[#007aff]">Diferenciais</a>
                     <button
                         onClick={sendMessage}
